@@ -6,8 +6,14 @@ import path from 'path';
 
 function getGitVersion(): string {
   try {
-    const commitCount = execSync('git rev-list --count HEAD', { encoding: 'utf-8' }).trim();
-    return `1.0.${commitCount}`;
+    const commitCount = parseInt(
+      execSync('git rev-list --count HEAD', { encoding: 'utf-8' }).trim(),
+      10
+    );
+    const patch = commitCount % 10;
+    const minor = Math.floor(commitCount / 10) % 10;
+    const major = 1 + Math.floor(commitCount / 100);
+    return `${major}.${minor}.${patch}`;
   } catch {
     return '1.0.0';
   }

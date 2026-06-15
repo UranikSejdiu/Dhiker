@@ -47,8 +47,8 @@ function getRequestHeaders() {
     return $headers;
 }
 
-// Helper to authenticate user from Bearer Token
-function authenticate($db) {
+// Helper to authenticate user from Bearer Token or POST body _token
+function authenticate($db, $input = []) {
     $headers = getRequestHeaders();
     $authHeader = '';
     
@@ -59,8 +59,14 @@ function authenticate($db) {
         }
     }
     
+    $token = '';
     if (preg_match('/Bearer\s(\S+)/i', $authHeader, $matches)) {
         $token = $matches[1];
+    } elseif (!empty($input['_token'])) {
+        $token = $input['_token'];
+    }
+    
+    if (!empty($token)) {
         $stmt = $db->prepare("SELECT * FROM users WHERE session_token = ?");
         $stmt->execute([$token]);
         $user = $stmt->fetch();
@@ -168,7 +174,7 @@ try {
             exit;
 
         case 'get_profile':
-            $user = authenticate($db);
+            $user = authenticate($db, $input);
             echo json_encode([
                 'user' => [
                     'id' => $user['id'],
@@ -253,7 +259,7 @@ try {
             break;
             
         case 'fetch':
-            $user = authenticate($db);
+            $user = authenticate($db, $input);
             $stmt = $db->prepare("SELECT * FROM dhikrs WHERE user_id = ? ORDER BY created_at DESC");
             $stmt->execute([$user['id']]);
             $dhikrs = $stmt->fetchAll();
@@ -269,7 +275,7 @@ try {
             break;
             
         case 'add':
-            $user = authenticate($db);
+            $user = authenticate($db, $input);
             $id = isset($input['id']) ? $input['id'] : generateUuid();
             $name = isset($input['name']) ? trim($input['name']) : '';
             $limit = isset($input['daily_limit']) ? $input['daily_limit'] : null;
@@ -300,7 +306,7 @@ try {
             break;
             
         case 'sync':
-            $user = authenticate($db);
+            $user = authenticate($db, $input);
             $deltas = isset($input['deltas']) ? $input['deltas'] : [];
             $today = date('Y-m-d');
             
@@ -346,7 +352,7 @@ try {
             break;
             
         case 'update':
-            $user = authenticate($db);
+            $user = authenticate($db, $input);
             $id = isset($input['id']) ? $input['id'] : '';
             $name = isset($input['name']) ? trim($input['name']) : '';
             $limit = isset($input['daily_limit']) ? $input['daily_limit'] : null;
@@ -364,7 +370,7 @@ try {
             break;
             
         case 'delete':
-            $user = authenticate($db);
+            $user = authenticate($db, $input);
             $id = isset($input['id']) ? $input['id'] : '';
             
             if (empty($id)) {
@@ -380,7 +386,7 @@ try {
             break;
             
         case 'reset':
-            $user = authenticate($db);
+            $user = authenticate($db, $input);
             $id = isset($input['id']) ? $input['id'] : '';
             $today = date('Y-m-d');
             

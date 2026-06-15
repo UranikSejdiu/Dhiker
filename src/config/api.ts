@@ -43,10 +43,16 @@ export async function apiRequest(action: string, method: 'GET' | 'POST', body?: 
     headers['Authorization'] = `Bearer ${token}`;
   }
   
+  // Also send token in POST body as fallback for Plesk (Auth header may be stripped)
+  const finalBody = body ? { ...body } : {};
+  if (token && action !== 'login' && action !== 'register' && action !== 'google_login' && action !== 'google_callback') {
+    finalBody._token = token;
+  }
+  
   const response = await fetch(url, {
     method,
     headers,
-    body: body ? JSON.stringify(body) : undefined,
+    body: method === 'POST' ? JSON.stringify(finalBody) : undefined,
   });
   
   const data = await response.json();

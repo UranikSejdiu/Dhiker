@@ -31,6 +31,8 @@ interface DhikrContextType {
   dhikrs: UIDhikr[];
   selectedDhikr: UIDhikr | null;
   loading: boolean;
+  syncError: string | null;
+  refreshDhikrs: () => Promise<void>;
   selectDhikr: (id: string | null) => void;
   addDhikr: (name: string, dailyLimit?: number | null) => Promise<void>;
   deleteDhikr: (id: string) => Promise<void>;
@@ -70,6 +72,7 @@ export function DhikrProvider({ children }: { children: ReactNode }) {
   const [dhikrs, setDhikrs] = useState<UIDhikr[]>([]);
   const [selectedDhikrId, setSelectedDhikrId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [syncError, setSyncError] = useState<string | null>(null);
 
   // Reference for batched syncing
   const pendingIncrementsRef = useRef<Record<string, { delta: number, timeout: NodeJS.Timeout | null }>>({});
@@ -105,6 +108,7 @@ export function DhikrProvider({ children }: { children: ReactNode }) {
     if (!user) return;
     
     try {
+      setSyncError(null);
       const data = await apiRequest('fetch', 'POST');
       const today = getTodayDate();
       
@@ -133,10 +137,18 @@ export function DhikrProvider({ children }: { children: ReactNode }) {
       setDhikrs(items);
       setLoading(false);
       saveDhikrsToCache(items);
-    } catch (err) {
+    } catch (err: any) {
+      setSyncError(err.message || 'Failed to fetch dhikrs from server');
+      setLoading(false);
       console.error('Error fetching dhikrs from server:', err);
     }
   }, [user, saveDhikrsToCache]);
+
+  const refreshDhikrs = useCallback(async () => {
+    setSyncError(null);
+    setLoading(true);
+    await fetchDhikrs();
+  }, [fetchDhikrs]);
 
   const syncPending = useCallback(async (id: string) => {
     const pending = pendingIncrementsRef.current[id];
@@ -481,6 +493,8 @@ export function DhikrProvider({ children }: { children: ReactNode }) {
         dhikrs,
         selectedDhikr,
         loading,
+        syncError,
+        refreshDhikrs,
         selectDhikr,
         addDhikr,
         deleteDhikr,

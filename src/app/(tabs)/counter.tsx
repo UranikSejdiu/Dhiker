@@ -39,6 +39,7 @@ export default function CounterScreen() {
   const {
     selectedDhikr, dhikrs, increment, decrement, selectDhikr,
     resetDaily, addDhikr, deleteDhikr, updateDhikr,
+    refreshDhikrs, syncError, loading: dhikrLoading,
   } = useDhikr();
   const { user, logout } = useAuth();
   
@@ -482,6 +483,31 @@ export default function CounterScreen() {
                     </Text>
                   </TouchableOpacity>
                 ))}
+              </View>
+
+              {/* Sync Status */}
+              <Text style={[styles.settingsSectionLabel, { marginTop: 24 }]}>SYNC</Text>
+              <View style={styles.settingsCard}>
+                <TouchableOpacity
+                  style={styles.settingsRow}
+                  onPress={async () => { await refreshDhikrs(); }}
+                  disabled={dhikrLoading}
+                >
+                  <Text style={styles.settingsRowLabel}>{dhikrLoading ? 'Syncing...' : 'Refresh from server'}</Text>
+                  {syncError ? (
+                    <Text style={[styles.settingsRowValue, { color: colors.error, fontSize: 12 }]} numberOfLines={1}>
+                      {syncError}
+                    </Text>
+                  ) : null}
+                </TouchableOpacity>
+                {syncError ? (
+                  <>
+                    <View style={styles.settingsDivider} />
+                    <TouchableOpacity style={styles.settingsRow} onPress={async () => { await refreshDhikrs(); }}>
+                      <Text style={[styles.settingsRowLabel, { color: colors.error }]}>Retry sync</Text>
+                    </TouchableOpacity>
+                  </>
+                ) : null}
               </View>
 
               {/* About */}

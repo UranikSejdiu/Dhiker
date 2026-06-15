@@ -7,7 +7,7 @@ export default function SettingsScreen() {
   const { user, logout } = useAuth();
 
   const handleLogout = async () => {
-    if (Platform.OS === 'web') {
+    if (Platform.OS === 'web' && typeof window !== 'undefined') {
       if (window.confirm('Are you sure you want to sign out?')) {
         try {
           await logout();
@@ -15,7 +15,7 @@ export default function SettingsScreen() {
           alert(error.message);
         }
       }
-    } else {
+    } else if (Platform.OS !== 'web') {
       Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
         { text: 'Cancel', style: 'cancel' },
         { 

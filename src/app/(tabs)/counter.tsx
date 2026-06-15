@@ -25,6 +25,13 @@ import Fireworks from '../../components/Fireworks';
 
 const SCREEN_HEIGHT = Dimensions.get('window').height;
 
+const LANGUAGES = [
+  { code: 'en', name: 'English', flag: '🇬🇧' },
+  { code: 'de', name: 'Deutsch', flag: '🇩🇪' },
+  { code: 'fr', name: 'Français', flag: '🇫🇷' },
+  { code: 'sq', name: 'Shqip', flag: '🇦🇱' },
+];
+
 export default function CounterScreen() {
   const {
     selectedDhikr, dhikrs, increment, decrement, selectDhikr,
@@ -41,8 +48,10 @@ export default function CounterScreen() {
   const [mode, setMode] = useState<'increment' | 'decrement'>('increment');
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const warningFadeAnim = useRef(new Animated.Value(0)).current;
+  const decrementPulseAnim = useRef(new Animated.Value(1)).current;
   const [showFireworks, setShowFireworks] = useState(false);
   const [showLimitWarning, setShowLimitWarning] = useState(false);
+  const [showSubtractionModal, setShowSubtractionModal] = useState(false);
 
   // ─── Panel Visibility ────────────────────────────
   const [showDhikrsPanel, setShowDhikrsPanel] = useState(false);
@@ -78,6 +87,20 @@ export default function CounterScreen() {
       useNativeDriver: true,
     }).start();
   }, [showLimitWarning]);
+
+  useEffect(() => {
+    if (mode === 'decrement') {
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(decrementPulseAnim, { toValue: 0.4, duration: 600, useNativeDriver: true }),
+          Animated.timing(decrementPulseAnim, { toValue: 1, duration: 600, useNativeDriver: true }),
+        ])
+      ).start();
+    } else {
+      decrementPulseAnim.setValue(1);
+      decrementPulseAnim.stopAnimation();
+    }
+  }, [mode]);
 
   const clearWarning = () => {
     if (showLimitWarning) setShowLimitWarning(false);
@@ -117,7 +140,12 @@ export default function CounterScreen() {
 
   const toggleMode = () => {
     if (Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    setMode(prev => prev === 'increment' ? 'decrement' : 'increment');
+    if (mode === 'increment') {
+      setMode('decrement');
+      setShowSubtractionModal(true);
+    } else {
+      setMode('increment');
+    }
   };
 
   const handleReset = async () => {
@@ -248,9 +276,13 @@ export default function CounterScreen() {
       {/* ─── Bottom Toolbar ─── */}
       <View style={styles.bottomToolbar}>
         <TouchableOpacity style={styles.toolButton} onPress={toggleMode}>
-          <Text style={[styles.toolIcon, mode === 'decrement' && styles.toolIconActive]}>
+          <Animated.Text style={[
+            styles.toolIcon, 
+            mode === 'decrement' && styles.toolIconActive,
+            { opacity: decrementPulseAnim }
+          ]}>
             {mode === 'increment' ? '+' : '−'}
-          </Text>
+          </Animated.Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.toolButton} onPress={handleReset}>
           <Text style={styles.toolIcon}>↺</Text>
@@ -428,17 +460,24 @@ export default function CounterScreen() {
 
               {/* Language */}
               <Text style={[styles.settingsSectionLabel, { marginTop: 24 }]}>{t('languageSection')}</Text>
-              <View style={styles.settingsCard}>
-                {(['en', 'de', 'fr', 'sq'] as LanguageCode[]).map((lang, idx) => (
-                  <View key={lang}>
-                    <TouchableOpacity style={styles.settingsRow} onPress={() => setLanguage(lang)}>
-                      <Text style={styles.settingsRowLabel}>{lang.toUpperCase()}</Text>
-                      <Text style={styles.settingsRowValue}>
-                        {language === lang ? '✓' : ''}
-                      </Text>
-                    </TouchableOpacity>
-                    {idx < 3 && <View style={styles.settingsDivider} />}
-                  </View>
+              <View style={styles.languageRowContainer}>
+                {LANGUAGES.map((l) => (
+                  <TouchableOpacity
+                    key={l.code}
+                    style={[
+                      styles.languageBtn,
+                      language === l.code && styles.languageBtnActive
+                    ]}
+                    onPress={() => setLanguage(l.code as LanguageCode)}
+                  >
+                    <Text style={styles.languageBtnFlag}>{l.flag}</Text>
+                    <Text style={[
+                      styles.languageBtnText,
+                      language === l.code && styles.languageBtnTextActive
+                    ]}>
+                      {l.name}
+                    </Text>
+                  </TouchableOpacity>
                 ))}
               </View>
 
@@ -518,6 +557,40 @@ export default function CounterScreen() {
             </View>
           </Pressable>
         </Pressable>
+      </Modal>
+
+      {/* ─── Subtraction Mode Alert ─── */}
+      <Modal
+        animationType="fade"
+        transparent
+        visible={showSubtractionModal}
+        onRequestClose={() => setShowSubtractionModal(false)}
+      >
+        <View style={styles.formOverlay}>
+          <View style={styles.formContent}>
+            <View style={styles.warningIconContainer}>
+              <Text style={styles.warningIcon}>⚠️</Text>
+            </View>
+            <Text style={[styles.formTitle, {textAlign: 'center', fontSize: 20, marginBottom: 12}]}>
+              {t('subtractionModeTitle')}
+            </Text>
+            <Text style={{textAlign: 'center', fontSize: 15, color: colors.textSecondary, marginBottom: 24, lineHeight: 22}}>
+              {t('subtractionModeMsg')}
+            </Text>
+            <TouchableOpacity onPress={() => setShowSubtractionModal(false)}>
+              <LinearGradient
+                colors={[colors.error, '#C0392B']}
+                style={{ borderRadius: 12, paddingVertical: 14, alignItems: 'center' }}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+              >
+                <Text style={{ color: colors.background, fontSize: 16, fontWeight: '700' }}>
+                  {t('gotItBtn')}
+                </Text>
+              </LinearGradient>
+            </TouchableOpacity>
+          </View>
+        </View>
       </Modal>
     </View>
   );
@@ -656,7 +729,6 @@ const getStyles = (colors: ThemeColors) => StyleSheet.create({
     fontSize: 28,
     fontWeight: '300',
     textAlign: 'center',
-    // These specific adjustments ensure mathematical vertical centering of + and - glyphs
     includeFontPadding: false,
     textAlignVertical: 'center',
     marginTop: Platform.OS === 'ios' ? -2 : 0, 
@@ -879,6 +951,40 @@ const getStyles = (colors: ThemeColors) => StyleSheet.create({
     height: 14,
     borderRadius: 7,
   },
+  
+  // ─── Language Buttons ───
+  languageRowContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+  },
+  languageBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.surfaceLight,
+    borderWidth: 1,
+    borderColor: colors.card,
+    borderRadius: 20,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    gap: 8,
+  },
+  languageBtnActive: {
+    borderColor: colors.primary,
+    backgroundColor: colors.surface,
+  },
+  languageBtnFlag: {
+    fontSize: 16,
+  },
+  languageBtnText: {
+    color: colors.textSecondary,
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  languageBtnTextActive: {
+    color: colors.primary,
+  },
+
   logoutButton: {
     backgroundColor: colors.error + '1A',
     padding: 16,
@@ -894,7 +1000,7 @@ const getStyles = (colors: ThemeColors) => StyleSheet.create({
     fontWeight: '600',
   },
 
-  // ─── Add/Edit Dhikr Form Modal ───
+  // ─── Modals (Add Dhikr & Alert) ───
   formOverlay: {
     flex: 1,
     backgroundColor: colors.overlay,
@@ -965,5 +1071,18 @@ const getStyles = (colors: ThemeColors) => StyleSheet.create({
     color: colors.background,
     fontWeight: '700',
     fontSize: 15,
+  },
+  warningIconContainer: {
+    alignSelf: 'center',
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: colors.error + '20',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  warningIcon: {
+    fontSize: 28,
   },
 });

@@ -58,6 +58,11 @@ export const translations = {
     // Fireworks
     goalCompleteTitle: 'ما شاء الله',
     goalCompleteSubtitle: 'Daily Goal Complete!',
+    
+    // Subtraction
+    subtractionModeTitle: 'Subtraction Mode',
+    subtractionModeMsg: 'You are now subtracting from your dhikr count. Be careful!',
+    gotItBtn: 'Got it',
   },
   de: {
     appTitle: 'Dhikr Zähler',
@@ -112,6 +117,10 @@ export const translations = {
     
     goalCompleteTitle: 'ما شاء الله',
     goalCompleteSubtitle: 'Tagesziel erreicht!',
+    
+    subtractionModeTitle: 'Subtraktionsmodus',
+    subtractionModeMsg: 'Sie ziehen jetzt von Ihrem Dhikr-Zähler ab. Seien Sie vorsichtig!',
+    gotItBtn: 'Verstanden',
   },
   fr: {
     appTitle: 'Compteur Dhikr',
@@ -166,6 +175,10 @@ export const translations = {
     
     goalCompleteTitle: 'ما شاء الله',
     goalCompleteSubtitle: 'Objectif quotidien atteint!',
+    
+    subtractionModeTitle: 'Mode Soustraction',
+    subtractionModeMsg: 'Vous soustrayez maintenant de votre compte dhikr. Soyez prudent!',
+    gotItBtn: 'Compris',
   },
   sq: {
     appTitle: 'Dhikr Counter',
@@ -220,6 +233,10 @@ export const translations = {
     
     goalCompleteTitle: 'ما شاء الله',
     goalCompleteSubtitle: 'Qëllimi ditor u arrit!',
+    
+    subtractionModeTitle: 'Modaliteti i Zbritjes',
+    subtractionModeMsg: 'Tani po zbrisni nga numërimi i dhikrit tuaj. Bëni kujdes!',
+    gotItBtn: 'E kuptova',
   }
 };
 

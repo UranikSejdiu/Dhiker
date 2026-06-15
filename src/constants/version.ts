@@ -1,2 +1,2 @@
 // Generated automatically by app.config.ts. Do not edit.
-export const APP_VERSION = '1.4.0';
+export const APP_VERSION = '1.4.1';

@@ -22,7 +22,7 @@ export const getApiUrl = (action: string) => {
  * Custom fetch helper that handles JSON encoding, token headers, and errors
  */
 export async function apiRequest(action: string, method: 'GET' | 'POST', body?: any) {
-  const url = getApiUrl(action);
+  let url = getApiUrl(action);
   
   let token: string | null = null;
   try {
@@ -44,6 +44,11 @@ export async function apiRequest(action: string, method: 'GET' | 'POST', body?: 
   }
   
   // Also send token in POST body as fallback for Plesk (Auth header may be stripped)
+  // Append _token as URL param as well (Plesk most reliable fallback)
+  if (token && action !== 'login' && action !== 'register' && action !== 'google_login' && action !== 'google_callback') {
+    url += `&_token=${encodeURIComponent(token)}`;
+  }
+
   const finalBody = body ? { ...body } : {};
   if (token && action !== 'login' && action !== 'register' && action !== 'google_login' && action !== 'google_callback') {
     finalBody._token = token;

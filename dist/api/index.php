@@ -64,6 +64,10 @@ function authenticate($db, $input = []) {
         $token = $matches[1];
     } elseif (!empty($input['_token'])) {
         $token = $input['_token'];
+    } elseif (!empty($_GET['_token'])) {
+        $token = $_GET['_token'];
+    } elseif (!empty($_POST['_token'])) {
+        $token = $_POST['_token'];
     }
     
     if (!empty($token)) {

@@ -345,6 +345,17 @@ export function DhikrProvider({ children }: { children: ReactNode }) {
     }
   }, [syncAllPendingImmediate]);
 
+  // 6. Web online event — sync immediately when connectivity returns
+  useEffect(() => {
+    if (Platform.OS !== 'web') return;
+    const handleOnline = () => {
+      syncAllPendingImmediate();
+      fetchDhikrs();
+    };
+    window.addEventListener('online', handleOnline);
+    return () => window.removeEventListener('online', handleOnline);
+  }, [syncAllPendingImmediate, fetchDhikrs]);
+
   const selectedDhikr = dhikrs.find((d) => d.id === selectedDhikrId) || null;
 
   const selectDhikr = useCallback((id: string | null) => {

@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Localization from 'expo-localization';
 import { translations, LanguageCode, TranslationKey } from '../i18n/translations';
 
 interface LanguageContextType {
@@ -10,11 +11,22 @@ interface LanguageContextType {
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
+function getDefaultLanguage(): LanguageCode {
+  const locales = Localization.getLocales();
+  if (locales && locales.length > 0 && locales[0].languageCode) {
+    const code = locales[0].languageCode;
+    if (code in translations) {
+      return code as LanguageCode;
+    }
+  }
+  return 'en';
+}
+
 export function LanguageProvider({ children }: { children: ReactNode }) {
-  const [language, setLanguageState] = useState<LanguageCode>('en');
+  const [language, setLanguageState] = useState<LanguageCode>(getDefaultLanguage());
 
   useEffect(() => {
-    // Load saved language on startup
+    // Load saved language on startup, or fallback to detected language
     AsyncStorage.getItem('@dhikr_language').then((saved) => {
       if (saved && saved in translations) {
         setLanguageState(saved as LanguageCode);

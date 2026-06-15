@@ -270,7 +270,7 @@ export default function CounterScreen() {
             onPress={handleTap}
           >
             <Animated.Text style={[styles.massiveNumber, { opacity: fadeAnim }]}>
-              {selectedDhikr.dailyCount}
+              {selectedDhikr.totalCount}
             </Animated.Text>
             <Animated.View style={[styles.warningContainer, { opacity: warningFadeAnim }]}>
               <Text style={styles.warningText}>{t('changeLimitWarning')}</Text>
@@ -367,32 +367,8 @@ export default function CounterScreen() {
                   </View>
 
                   <View style={styles.dhikrCardCounts}>
-                    <Text style={styles.dhikrCardDaily}>
-                      {t('todayLabel')} {item.dailyCount}
-                      {item.dailyLimit ? ` / ${item.dailyLimit}` : ''}
-                    </Text>
                     <Text style={styles.dhikrCardTotal}>{t('totalLabel')} {item.totalCount}</Text>
                   </View>
-
-                  {item.dailyLimit ? (
-                    <View style={styles.progressBarContainer}>
-                      <View style={styles.progressBarTrack}>
-                        <LinearGradient
-                          colors={
-                            item.dailyCount >= item.dailyLimit
-                              ? colors.gradientSecondary
-                              : colors.gradientPrimary
-                          }
-                          style={[
-                            styles.progressBarFill,
-                            { width: `${Math.min((item.dailyCount / item.dailyLimit) * 100, 100)}%` } as any,
-                          ]}
-                          start={{ x: 0, y: 0 }}
-                          end={{ x: 1, y: 0 }}
-                        />
-                      </View>
-                    </View>
-                  ) : null}
                 </TouchableOpacity>
               )}
               ListEmptyComponent={

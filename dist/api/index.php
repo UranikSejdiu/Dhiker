@@ -32,7 +32,17 @@ function getRequestHeaders() {
     }
     // Also try apache_request_headers if available
     if (function_exists('apache_request_headers')) {
-        $headers = array_merge($headers, apache_request_headers());
+        $apacheHeaders = apache_request_headers();
+        foreach ($apacheHeaders as $key => $val) {
+            $headers[$key] = $val;
+        }
+    }
+    // Direct fallback for CGI/Plesk setups where Authorization header may not have HTTP_ prefix
+    if (!empty($_SERVER['HTTP_AUTHORIZATION'])) {
+        $headers['Authorization'] = $_SERVER['HTTP_AUTHORIZATION'];
+    }
+    if (!empty($_SERVER['REDIRECT_HTTP_AUTHORIZATION'])) {
+        $headers['Authorization'] = $_SERVER['REDIRECT_HTTP_AUTHORIZATION'];
     }
     return $headers;
 }

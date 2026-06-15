@@ -23,6 +23,7 @@ import { LanguageCode } from '../../i18n/translations';
 import * as Haptics from 'expo-haptics';
 import Fireworks from '../../components/Fireworks';
 import FlagIcon from '../../components/FlagIcon';
+import Constants from 'expo-constants';
 
 const SCREEN_HEIGHT = Dimensions.get('window').height;
 
@@ -487,7 +488,7 @@ export default function CounterScreen() {
               <View style={styles.settingsCard}>
                 <View style={styles.settingsRow}>
                   <Text style={styles.settingsRowLabel}>{t('version')}</Text>
-                  <Text style={styles.settingsRowValue}>1.0.0</Text>
+                  <Text style={styles.settingsRowValue}>{Constants.expoConfig?.version || '1.0.0'}</Text>
                 </View>
               </View>
 

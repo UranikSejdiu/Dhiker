@@ -1,0 +1,73 @@
+import { ExpoConfig, ConfigContext } from 'expo/config';
+import { execSync } from 'child_process';
+
+function getGitVersion(): string {
+  try {
+    const commitCount = execSync('git rev-list --count HEAD', { encoding: 'utf-8' }).trim();
+    const shortHash = execSync('git rev-parse --short HEAD', { encoding: 'utf-8' }).trim();
+    return `1.0.${commitCount}`;
+  } catch {
+    return '1.0.0';
+  }
+}
+
+export default ({ config }: ConfigContext): ExpoConfig => ({
+  ...config,
+  name: 'Dhikr Counter',
+  slug: 'dhikr-counter',
+  version: getGitVersion(),
+  orientation: 'portrait',
+  icon: './assets/images/icon.png',
+  scheme: 'dhikrcounter',
+  userInterfaceStyle: 'dark',
+  backgroundColor: '#060D1B',
+  ios: {
+    icon: './assets/expo.icon',
+  },
+  android: {
+    package: 'com.dhikrcounter.app',
+    adaptiveIcon: {
+      backgroundColor: '#060D1B',
+      foregroundImage: './assets/images/android-icon-foreground.png',
+      backgroundImage: './assets/images/android-icon-background.png',
+      monochromeImage: './assets/images/android-icon-monochrome.png',
+    },
+    // @ts-ignore
+    predictiveBackGestureEnabled: false,
+  },
+  web: {
+    output: 'static',
+    favicon: './assets/images/favicon.png',
+    name: 'Dhikr Counter',
+    shortName: 'Dhikr',
+    // @ts-ignore
+    display: 'standalone',
+    backgroundColor: '#060D1B',
+    themeColor: '#060D1B',
+  },
+  plugins: [
+    'expo-router',
+    'expo-secure-store',
+    [
+      'expo-splash-screen',
+      {
+        backgroundColor: '#060D1B',
+        android: {
+          image: './assets/images/splash-icon.png',
+          imageWidth: 76,
+        },
+      },
+    ],
+    'expo-localization',
+  ],
+  experiments: {
+    typedRoutes: true,
+    reactCompiler: true,
+  },
+  extra: {
+    router: {},
+    eas: {
+      projectId: 'e1ecf016-4905-4a7b-9107-bf5754cd0396',
+    },
+  },
+});

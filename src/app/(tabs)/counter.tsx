@@ -118,6 +118,26 @@ export default function CounterScreen() {
     }
   }, [user]);
 
+  // Poll server preferences every 15s for cross-device sync
+  useEffect(() => {
+    if (!user || Platform.OS !== 'web') return;
+    const pollPrefs = async () => {
+      try {
+        const data = await apiRequest('get_profile', 'POST');
+        if (data.user) {
+          if (data.user.theme && data.user.theme !== themeName && data.user.theme in predefinedThemes) {
+            setTheme(data.user.theme as ThemeName);
+          }
+          if (data.user.language && data.user.language !== language && ['en','de','fr','sq'].includes(data.user.language)) {
+            setLanguage(data.user.language as LanguageCode);
+          }
+        }
+      } catch {}
+    };
+    const id = setInterval(pollPrefs, 15000);
+    return () => clearInterval(id);
+  }, [user, themeName, language]);
+
   const clearWarning = () => {
     if (showLimitWarning) setShowLimitWarning(false);
   };

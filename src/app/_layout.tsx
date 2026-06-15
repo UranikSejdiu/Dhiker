@@ -34,6 +34,11 @@ export default function RootLayout() {
       navigator.serviceWorker
         .register('/service-worker.js')
         .then((registration) => {
+          // Force an immediate check for updates on startup
+          registration.update().catch((err) => {
+            console.debug('Failed to force update check:', err);
+          });
+
           // Listen for new service worker being installed/activated
           registration.addEventListener('updatefound', () => {
             const newWorker = registration.installing;

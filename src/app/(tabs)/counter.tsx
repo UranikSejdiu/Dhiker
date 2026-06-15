@@ -368,6 +368,14 @@ export default function CounterScreen() {
 
                   <View style={styles.dhikrCardCounts}>
                     <Text style={styles.dhikrCardTotal}>{t('totalLabel')} {item.totalCount}</Text>
+                    {item.dailyLimit !== null ? (
+                      <Text style={[
+                        styles.dhikrCardDaily,
+                        { color: item.dailyCount >= item.dailyLimit ? colors.error : item.dailyCount >= item.dailyLimit * 0.7 ? colors.warning : colors.success }
+                      ]}>
+                        {t('todayLabel')} {item.dailyCount}/{item.dailyLimit}
+                      </Text>
+                    ) : null}
                   </View>
                 </TouchableOpacity>
               )}

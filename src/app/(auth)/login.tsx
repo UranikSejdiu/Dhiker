@@ -23,8 +23,15 @@ export default function LoginScreen() {
   const [emailFocused, setEmailFocused] = useState(false);
   const [passwordFocused, setPasswordFocused] = useState(false);
 
-  const { login, loginWithGoogle } = useAuth();
+  const { login, loginWithGoogle, user } = useAuth();
   const router = useRouter();
+
+  // Redirect to counter when user becomes authenticated (e.g. after Google OAuth callback)
+  useEffect(() => {
+    if (user) {
+      router.replace('/(tabs)/counter');
+    }
+  }, [user]);
 
   // Animated values
   const fadeAnim = useRef(new Animated.Value(0)).current;

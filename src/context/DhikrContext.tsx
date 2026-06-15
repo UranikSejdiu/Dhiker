@@ -1,8 +1,9 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef, ReactNode } from 'react';
 import { supabase } from '../config/supabase';
 import { useAuth } from './AuthContext';
-import { Platform } from 'react-native';
+import { Platform, AppState, AppStateStatus } from 'react-native';
 import * as Haptics from 'expo-haptics';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface Dhikr {
   id: string;
@@ -15,7 +16,6 @@ interface Dhikr {
   created_at: string;
 }
 
-// Map db fields to camelCase for the frontend UI compatibility
 export interface UIDhikr {
   id: string;
   userId: string;
@@ -41,6 +41,9 @@ interface DhikrContextType {
 }
 
 const DhikrContext = createContext<DhikrContextType | undefined>(undefined);
+
+const DHIKR_CACHE_KEY = '@dhikr_list_cache';
+const DHIKR_PENDING_KEY = '@dhikr_pending_deltas';
 
 function getTodayDate(): string {
   return new Date().toISOString().split('T')[0];
@@ -71,6 +74,33 @@ export function DhikrProvider({ children }: { children: ReactNode }) {
   // Reference for batched syncing
   const pendingIncrementsRef = useRef<Record<string, { delta: number, timeout: NodeJS.Timeout | null }>>({});
 
+  // Helper: Save current dhikrs to local cache
+  const saveDhikrsToCache = useCallback(async (items: UIDhikr[]) => {
+    if (!user) return;
+    try {
+      await AsyncStorage.setItem(`${DHIKR_CACHE_KEY}_${user.id}`, JSON.stringify(items));
+    } catch (err) {
+      console.warn('Failed to save dhikrs cache:', err);
+    }
+  }, [user]);
+
+  // Helper: Save current pending queue to AsyncStorage
+  const savePendingDeltasToCache = useCallback(async () => {
+    if (!user) return;
+    try {
+      const deltasToSave: Record<string, number> = {};
+      Object.keys(pendingIncrementsRef.current).forEach((id) => {
+        const delta = pendingIncrementsRef.current[id]?.delta || 0;
+        if (delta !== 0) {
+          deltasToSave[id] = delta;
+        }
+      });
+      await AsyncStorage.setItem(`${DHIKR_PENDING_KEY}_${user.id}`, JSON.stringify(deltasToSave));
+    } catch (err) {
+      console.warn('Failed to save pending deltas cache:', err);
+    }
+  }, [user]);
+
   const fetchDhikrs = useCallback(async () => {
     if (!user) return;
     
@@ -98,41 +128,9 @@ export function DhikrProvider({ children }: { children: ReactNode }) {
 
     setDhikrs(items);
     setLoading(false);
-  }, [user]);
-
-  // Initial fetch and Realtime subscription
-  useEffect(() => {
-    if (!user) {
-      setDhikrs([]);
-      setSelectedDhikrId(null);
-      setLoading(false);
-      return;
-    }
-
-    fetchDhikrs();
-
-    const channel = supabase.channel('schema-db-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'dhikrs',
-          filter: `user_id=eq.${user.id}`,
-        },
-        (payload) => {
-          // Re-fetch everything on change for simplicity, or handle payload manually
-          // Since we do optimistic updates, we rely on state updates locally mostly,
-          // but we fetch to catch multi-device sync
-          fetchDhikrs();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [user, fetchDhikrs]);
+    // Write fetched items to cache
+    saveDhikrsToCache(items);
+  }, [user, saveDhikrsToCache]);
 
   const syncPending = useCallback(async (id: string) => {
     const pending = pendingIncrementsRef.current[id];
@@ -140,13 +138,9 @@ export function DhikrProvider({ children }: { children: ReactNode }) {
 
     const deltaToSync = pending.delta;
     pending.delta = 0;
+    await savePendingDeltasToCache();
 
     try {
-      // Use RPC (stored procedure) for atomic increment/decrement in Postgres,
-      // OR we can just do a naive update if we aren't heavily concurrent
-      // Supabase has no direct "fsIncrement", so we fetch current and add.
-      // A better way is using a Postgres function, but for now we'll rely on local state tracking.
-      
       const { data, error } = await supabase
         .from('dhikrs')
         .select('total_count, daily_count, last_reset_date')
@@ -169,9 +163,10 @@ export function DhikrProvider({ children }: { children: ReactNode }) {
       console.error('Failed to sync batch:', e);
       if (pendingIncrementsRef.current[id]) {
         pendingIncrementsRef.current[id].delta += deltaToSync;
+        await savePendingDeltasToCache();
       }
     }
-  }, [user]);
+  }, [user, savePendingDeltasToCache]);
 
   const scheduleSync = useCallback((id: string) => {
     const pending = pendingIncrementsRef.current[id];
@@ -187,6 +182,156 @@ export function DhikrProvider({ children }: { children: ReactNode }) {
       syncPending(id);
     }, 2000); // 2s debounce
   }, [syncPending]);
+
+  // Sync all pending deltas immediately (startup, unload, backgrounding)
+  const syncAllPendingImmediate = useCallback(async () => {
+    if (!user) return;
+
+    const ids = Object.keys(pendingIncrementsRef.current);
+    const syncPromises = ids.map(async (id) => {
+      const pending = pendingIncrementsRef.current[id];
+      if (!pending || pending.delta === 0) return;
+
+      if (pending.timeout) {
+        clearTimeout(pending.timeout);
+        pending.timeout = null;
+      }
+
+      const deltaToSync = pending.delta;
+      pending.delta = 0;
+      await savePendingDeltasToCache();
+
+      try {
+        const { data, error } = await supabase
+          .from('dhikrs')
+          .select('total_count, daily_count, last_reset_date')
+          .eq('id', id)
+          .single();
+          
+        if (!error && data) {
+          const today = getTodayDate();
+          const dayChanged = data.last_reset_date !== today;
+          const newDaily = (dayChanged ? 0 : data.daily_count) + deltaToSync;
+          const newTotal = data.total_count + deltaToSync;
+
+          await supabase.from('dhikrs').update({
+            total_count: newTotal,
+            daily_count: newDaily,
+            last_reset_date: today
+          }).eq('id', id);
+        } else if (error) {
+          throw error;
+        }
+      } catch (e) {
+        console.error(`Failed to sync pending for ${id}:`, e);
+        if (pendingIncrementsRef.current[id]) {
+          pendingIncrementsRef.current[id].delta += deltaToSync;
+          await savePendingDeltasToCache();
+        }
+      }
+    });
+
+    await Promise.all(syncPromises);
+  }, [user, savePendingDeltasToCache]);
+
+  // 1. Initial Cache Load & Startup Sync
+  useEffect(() => {
+    if (!user) {
+      setDhikrs([]);
+      setSelectedDhikrId(null);
+      setLoading(false);
+      return;
+    }
+
+    const loadCacheAndSync = async () => {
+      try {
+        // Load cache list
+        const cachedDhikrsJson = await AsyncStorage.getItem(`${DHIKR_CACHE_KEY}_${user.id}`);
+        if (cachedDhikrsJson) {
+          const parsed = JSON.parse(cachedDhikrsJson);
+          setDhikrs(parsed);
+          setLoading(false);
+        }
+
+        // Load pending deltas
+        const pendingDeltasJson = await AsyncStorage.getItem(`${DHIKR_PENDING_KEY}_${user.id}`);
+        if (pendingDeltasJson) {
+          const parsedDeltas = JSON.parse(pendingDeltasJson);
+          Object.keys(parsedDeltas).forEach((id) => {
+            pendingIncrementsRef.current[id] = {
+              delta: parsedDeltas[id],
+              timeout: null,
+            };
+          });
+        }
+
+        // Run startup sync for any left-over deltas
+        await syncAllPendingImmediate();
+      } catch (err) {
+        console.warn('Failed to load local dhikr cache:', err);
+      }
+    };
+
+    loadCacheAndSync();
+  }, [user, syncAllPendingImmediate]);
+
+  // 2. Fetch network data & register Realtime channel
+  useEffect(() => {
+    if (!user) return;
+
+    fetchDhikrs();
+
+    const channel = supabase.channel('schema-db-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'dhikrs',
+          filter: `user_id=eq.${user.id}`,
+        },
+        () => {
+          fetchDhikrs();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, fetchDhikrs]);
+
+  // 3. Keep cache updated with local UI state (optimistic updates, deletions, etc.)
+  useEffect(() => {
+    if (user && !loading) {
+      saveDhikrsToCache(dhikrs);
+    }
+  }, [dhikrs, user, loading, saveDhikrsToCache]);
+
+  // 4. Mobile AppState Change Listener (Sync on Close / Backgrounding)
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (nextAppState: AppStateStatus) => {
+      if (nextAppState === 'background' || nextAppState === 'inactive') {
+        syncAllPendingImmediate();
+      }
+    });
+    return () => {
+      subscription.remove();
+    };
+  }, [syncAllPendingImmediate]);
+
+  // 5. Web beforeunload Event Listener (Sync on Browser Close / Tab Close)
+  useEffect(() => {
+    if (Platform.OS === 'web') {
+      const handleBeforeUnload = () => {
+        syncAllPendingImmediate();
+      };
+      window.addEventListener('beforeunload', handleBeforeUnload);
+      return () => {
+        window.removeEventListener('beforeunload', handleBeforeUnload);
+      };
+    }
+  }, [syncAllPendingImmediate]);
 
   const selectedDhikr = dhikrs.find((d) => d.id === selectedDhikrId) || null;
 
@@ -226,7 +371,6 @@ export function DhikrProvider({ children }: { children: ReactNode }) {
       throw error;
     }
     
-    // Realtime will fetch the real ID, but we can call fetch directly to be safe
     fetchDhikrs();
   }, [user, fetchDhikrs]);
 
@@ -272,6 +416,7 @@ export function DhikrProvider({ children }: { children: ReactNode }) {
       pendingIncrementsRef.current[id] = { delta: 0, timeout: null };
     }
     pendingIncrementsRef.current[id].delta += 1;
+    await savePendingDeltasToCache();
 
     setDhikrs(current => current.map(d => {
       if (d.id === id) {
@@ -282,7 +427,7 @@ export function DhikrProvider({ children }: { children: ReactNode }) {
 
     scheduleSync(id);
     return true;
-  }, [user, dhikrs, scheduleSync]);
+  }, [user, dhikrs, scheduleSync, savePendingDeltasToCache]);
 
   const decrement = useCallback(async (id: string) => {
     if (!user) return;
@@ -297,6 +442,7 @@ export function DhikrProvider({ children }: { children: ReactNode }) {
       pendingIncrementsRef.current[id] = { delta: 0, timeout: null };
     }
     pendingIncrementsRef.current[id].delta -= 1;
+    await savePendingDeltasToCache();
 
     setDhikrs(current => current.map(d => {
       if (d.id === id) {
@@ -306,7 +452,7 @@ export function DhikrProvider({ children }: { children: ReactNode }) {
     }));
 
     scheduleSync(id);
-  }, [user, dhikrs, scheduleSync]);
+  }, [user, dhikrs, scheduleSync, savePendingDeltasToCache]);
 
   const resetDaily = useCallback(async (id: string) => {
     if (!user) return;
@@ -316,6 +462,7 @@ export function DhikrProvider({ children }: { children: ReactNode }) {
         clearTimeout(pendingIncrementsRef.current[id].timeout!);
       }
       pendingIncrementsRef.current[id].delta = 0;
+      await savePendingDeltasToCache();
     }
 
     setDhikrs(current => current.map(d => {
@@ -329,7 +476,7 @@ export function DhikrProvider({ children }: { children: ReactNode }) {
       daily_count: 0,
       last_reset_date: getTodayDate(),
     }).eq('id', id);
-  }, [user]);
+  }, [user, savePendingDeltasToCache]);
 
   return (
     <DhikrContext.Provider

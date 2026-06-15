@@ -706,7 +706,7 @@ const getStyles = (colors: ThemeColors) => StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     userSelect: 'none',
-    touchAction: 'none',
+    touchAction: 'manipulation',
   } as any,
   massiveNumber: {
     color: colors.textSecondary,

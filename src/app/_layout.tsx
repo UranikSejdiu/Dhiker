@@ -28,12 +28,40 @@ function RootContent() {
 }
 
 export default function RootLayout() {
-  // Register the Service Worker for PWA offline support
+  // Register the Service Worker for PWA offline support and handle updates
   useEffect(() => {
     if (Platform.OS === 'web' && 'serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/service-worker.js').catch((err) => {
-        console.warn('Service worker registration failed:', err);
-      });
+      navigator.serviceWorker
+        .register('/service-worker.js')
+        .then((registration) => {
+          // Listen for new service worker being installed/activated
+          registration.addEventListener('updatefound', () => {
+            const newWorker = registration.installing;
+            if (newWorker) {
+              newWorker.addEventListener('statechange', () => {
+                if (newWorker.state === 'activated') {
+                  // Reload the page to load the new version
+                  window.location.reload();
+                }
+              });
+            }
+          });
+        })
+        .catch((err) => {
+          console.warn('Service worker registration failed:', err);
+        });
+
+      // Handle message events from the service worker (fallback mechanism)
+      const handleMessage = (event: MessageEvent) => {
+        if (event.data && event.data.type === 'VERSION_UPDATE') {
+          window.location.reload();
+        }
+      };
+
+      navigator.serviceWorker.addEventListener('message', handleMessage);
+      return () => {
+        navigator.serviceWorker.removeEventListener('message', handleMessage);
+      };
     }
   }, []);
 

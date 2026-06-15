@@ -1,7 +1,7 @@
 // Dhikr Counter Service Worker
 // Caches app shell for offline support and instant load
 
-const CACHE_NAME = 'dhikr-counter-v1';
+const CACHE_NAME = 'dhikr-counter-v2';
 
 // These are the core app files to pre-cache on install
 const PRECACHE_URLS = ['/'];
@@ -14,14 +14,26 @@ self.addEventListener('install', (event) => {
   self.skipWaiting();
 });
 
-// On activate: clean up old caches
+// On activate: clean up old caches and reload clients
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) =>
       Promise.all(
         keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))
       )
-    )
+    ).then(() => {
+      // Force all client tabs/windows to reload to fetch the new app version
+      return self.clients.matchAll({ type: 'window' }).then((clients) => {
+        clients.forEach((client) => {
+          try {
+            client.navigate(client.url);
+          } catch (e) {
+            // Fallback: post a message to the client if navigate() fails
+            client.postMessage({ type: 'VERSION_UPDATE' });
+          }
+        });
+      });
+    })
   );
   self.clients.claim();
 });

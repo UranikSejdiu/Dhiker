@@ -491,6 +491,11 @@ export default function CounterScreen() {
                   <Text style={styles.settingsRowLabel}>{t('version')}</Text>
                   <Text style={styles.settingsRowValue}>{APP_VERSION}</Text>
                 </View>
+                <View style={styles.settingsDivider} />
+                <View style={styles.settingsRow}>
+                  <Text style={styles.settingsRowLabel}>{t('madeBy')}</Text>
+                  <Text style={styles.settingsRowValue}>Uranik Sejdiu</Text>
+                </View>
               </View>
 
               <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>

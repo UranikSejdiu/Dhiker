@@ -41,3 +41,9 @@ example
 /ios
 /android
 
+# PHP config (Plesk credentials)
+public/api/config.php
+public/api/db.php
+dist/api/config.php
+dist/api/db.php
+

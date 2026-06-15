@@ -12,13 +12,6 @@ interface LanguageContextType {
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
 function getDefaultLanguage(): LanguageCode {
-  const locales = Localization.getLocales();
-  if (locales && locales.length > 0 && locales[0].languageCode) {
-    const code = locales[0].languageCode;
-    if (code in translations) {
-      return code as LanguageCode;
-    }
-  }
   return 'en';
 }
 
@@ -26,10 +19,20 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   const [language, setLanguageState] = useState<LanguageCode>(getDefaultLanguage());
 
   useEffect(() => {
-    // Load saved language on startup, or fallback to detected language
+    // Load saved language first, then fallback to browser detection
     AsyncStorage.getItem('@dhikr_language').then((saved) => {
       if (saved && saved in translations) {
         setLanguageState(saved as LanguageCode);
+      } else {
+        try {
+          const locales = Localization.getLocales();
+          if (locales && locales.length > 0 && locales[0].languageCode) {
+            const code = locales[0].languageCode;
+            if (code in translations) {
+              setLanguageState(code as LanguageCode);
+            }
+          }
+        } catch {}
       }
     });
   }, []);

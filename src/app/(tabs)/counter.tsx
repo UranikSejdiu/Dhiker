@@ -22,14 +22,15 @@ import { ThemeColors, predefinedThemes, ThemeName } from '../../utils/theme';
 import { LanguageCode } from '../../i18n/translations';
 import * as Haptics from 'expo-haptics';
 import Fireworks from '../../components/Fireworks';
+import FlagIcon from '../../components/FlagIcon';
 
 const SCREEN_HEIGHT = Dimensions.get('window').height;
 
 const LANGUAGES = [
-  { code: 'en', name: 'English', flag: '🇬🇧' },
-  { code: 'de', name: 'Deutsch', flag: '🇩🇪' },
-  { code: 'fr', name: 'Français', flag: '🇫🇷' },
-  { code: 'sq', name: 'Shqip', flag: '🇦🇱' },
+  { code: 'en', name: 'English', countryCode: 'gb' },
+  { code: 'de', name: 'Deutsch', countryCode: 'de' },
+  { code: 'fr', name: 'Français', countryCode: 'fr' },
+  { code: 'sq', name: 'Shqip', countryCode: 'al' },
 ];
 
 export default function CounterScreen() {
@@ -470,7 +471,7 @@ export default function CounterScreen() {
                     ]}
                     onPress={() => setLanguage(l.code as LanguageCode)}
                   >
-                    <Text style={styles.languageBtnFlag}>{l.flag}</Text>
+                    <FlagIcon countryCode={l.countryCode} size={20} />
                     <Text style={[
                       styles.languageBtnText,
                       language === l.code && styles.languageBtnTextActive

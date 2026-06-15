@@ -1,6 +1,6 @@
-const CACHE_NAME = 'dhikr-counter-v3';
+const CACHE_NAME = 'dhikr-counter-v4';
 
-const PRECACHE_URLS = ['/'];
+const PRECACHE_URLS = [];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(

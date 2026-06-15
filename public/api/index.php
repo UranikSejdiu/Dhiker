@@ -6,10 +6,12 @@
 //   ALTER TABLE users ADD COLUMN theme VARCHAR(50) DEFAULT 'dark-gold';
 //   ALTER TABLE users ADD COLUMN language VARCHAR(10) DEFAULT 'en';
 
-// CORS Headers
-header("Access-Control-Allow-Origin: *");
+// CORS Headers — reflect the requesting origin instead of wildcard
+$corsOrigin = isset($_SERVER['HTTP_ORIGIN']) ? $_SERVER['HTTP_ORIGIN'] : '*';
+header("Access-Control-Allow-Origin: $corsOrigin");
 header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With");
+header("Access-Control-Allow-Credentials: true");
 header("Content-Type: application/json");
 
 // Handle preflight OPTIONS request
@@ -88,6 +90,42 @@ function authenticate($db, $input = []) {
     exit;
 }
 
+// Simple file-based rate limiter (per IP, per endpoint)
+function checkRateLimit($action) {
+    $limit = 10; // max attempts
+    $window = 60; // seconds
+    $ip = isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : 'unknown';
+    $dir = sys_get_temp_dir() . '/dhikr_rate_limits';
+    if (!is_dir($dir)) {
+        @mkdir($dir, 0700, true);
+    }
+    $file = $dir . '/' . md5($ip . '_' . $action);
+    $now = time();
+    $data = @file_get_contents($file);
+    $attempts = $data ? json_decode($data, true) : [];
+    // Remove entries outside the window
+    $attempts = array_filter($attempts, function($t) use ($now, $window) {
+        return $t > ($now - $window);
+    });
+    if (count($attempts) >= $limit) {
+        http_response_code(429);
+        echo json_encode(['error' => 'Too many attempts. Please try again later.']);
+        exit;
+    }
+    $attempts[] = $now;
+    file_put_contents($file, json_encode($attempts), LOCK_EX);
+}
+
+// Validate email format
+function isValidEmail($email) {
+    return filter_var($email, FILTER_VALIDATE_EMAIL) !== false;
+}
+
+// Validate password strength
+function isValidPassword($password) {
+    return strlen($password) >= 6;
+}
+
 // Generate simple UUID v4
 function generateUuid() {
     $data = random_bytes(16);
@@ -104,20 +142,44 @@ $input = getJsonInput();
 try {
     switch ($action) {
         case 'google_login':
+            $oauthState = bin2hex(random_bytes(16));
+            setcookie('oauth_state', $oauthState, [
+                'expires' => time() + 600,
+                'path' => '/',
+                'secure' => true,
+                'httponly' => true,
+                'samesite' => 'Lax'
+            ]);
             $authUrl = "https://accounts.google.com/o/oauth2/v2/auth?" . http_build_query([
                 'client_id' => GOOGLE_CLIENT_ID,
                 'redirect_uri' => GOOGLE_REDIRECT_URI,
                 'response_type' => 'code',
                 'scope' => 'email profile',
-                'state' => 'google_oauth_state'
+                'state' => $oauthState
             ]);
             header("Location: " . $authUrl);
             exit;
 
         case 'google_callback':
+            // Verify OAuth state to prevent CSRF
+            $returnedState = isset($_GET['state']) ? $_GET['state'] : '';
+            $storedState = isset($_COOKIE['oauth_state']) ? $_COOKIE['oauth_state'] : '';
+            setcookie('oauth_state', '', [
+                'expires' => time() - 3600,
+                'path' => '/',
+                'secure' => true,
+                'httponly' => true,
+                'samesite' => 'Lax'
+            ]);
+            if (empty($returnedState) || empty($storedState) || !hash_equals($storedState, $returnedState)) {
+                header("Location: /login?error=" . urlencode("Security check failed. Please try signing in again."));
+                exit;
+            }
+
             $code = isset($_GET['code']) ? $_GET['code'] : '';
             if (empty($code)) {
-                die("OAuth Error: No authorization code received from Google.");
+                header("Location: /login?error=" . urlencode("No authorization code received from Google."));
+                exit;
             }
             
             // Exchange code for tokens
@@ -136,7 +198,8 @@ try {
             
             $tokenData = json_decode($response, true);
             if (isset($tokenData['error'])) {
-                die("OAuth Error during exchange: " . $tokenData['error_description']);
+                header("Location: /login?error=" . urlencode("Google sign-in failed. Please try again."));
+                exit;
             }
             
             $accessToken = $tokenData['access_token'];
@@ -152,7 +215,8 @@ try {
             
             $userInfo = json_decode($userInfoResponse, true);
             if (!isset($userInfo['email'])) {
-                die("OAuth Error: Failed to retrieve user email from Google.");
+                header("Location: /login?error=" . urlencode("Failed to retrieve your profile from Google."));
+                exit;
             }
             
             $email = $userInfo['email'];
@@ -189,12 +253,15 @@ try {
                     'id' => $user['id'],
                     'email' => $user['email'],
                     'display_name' => $user['display_name'],
-                    'session_token' => $user['session_token']
+                    'session_token' => $user['session_token'],
+                    'theme' => $user['theme'] ?? null,
+                    'language' => $user['language'] ?? null
                 ]
             ]);
             break;
 
         case 'register':
+            checkRateLimit('register');
             $email = isset($input['email']) ? trim($input['email']) : '';
             $password = isset($input['password']) ? $input['password'] : '';
             $displayName = isset($input['displayName']) ? trim($input['displayName']) : '';
@@ -202,6 +269,18 @@ try {
             if (empty($email) || empty($password) || empty($displayName)) {
                 http_response_code(400);
                 echo json_encode(['error' => 'All fields (email, password, name) are required.']);
+                break;
+            }
+            
+            if (!isValidEmail($email)) {
+                http_response_code(400);
+                echo json_encode(['error' => 'Please provide a valid email address.']);
+                break;
+            }
+            
+            if (!isValidPassword($password)) {
+                http_response_code(400);
+                echo json_encode(['error' => 'Password must be at least 6 characters.']);
                 break;
             }
             
@@ -233,6 +312,7 @@ try {
             break;
             
         case 'login':
+            checkRateLimit('login');
             $email = isset($input['email']) ? trim($input['email']) : '';
             $password = isset($input['password']) ? $input['password'] : '';
             
@@ -269,6 +349,10 @@ try {
             
         case 'fetch':
             $user = authenticate($db, $input);
+            $today = date('Y-m-d');
+            // Auto-reset daily counts on day change (atomic server-side)
+            $stmt = $db->prepare("UPDATE dhikrs SET daily_count = 0, last_reset_date = ? WHERE user_id = ? AND last_reset_date != ?");
+            $stmt->execute([$today, $user['id'], $today]);
             $stmt = $db->prepare("SELECT * FROM dhikrs WHERE user_id = ? ORDER BY created_at DESC");
             $stmt->execute([$user['id']]);
             $dhikrs = $stmt->fetchAll();
@@ -421,6 +505,20 @@ try {
             $theme = isset($input['theme']) ? $input['theme'] : null;
             $language = isset($input['language']) ? $input['language'] : null;
             
+            $validThemes = ['dark-gold', 'pure-light', 'emerald', 'midnight'];
+            $validLanguages = ['en', 'de', 'fr', 'sq'];
+            
+            if ($theme !== null && !in_array($theme, $validThemes)) {
+                http_response_code(400);
+                echo json_encode(['error' => 'Invalid theme value.']);
+                break;
+            }
+            if ($language !== null && !in_array($language, $validLanguages)) {
+                http_response_code(400);
+                echo json_encode(['error' => 'Invalid language value.']);
+                break;
+            }
+            
             if ($theme !== null || $language !== null) {
                 $fields = [];
                 $params = [];
@@ -448,7 +546,6 @@ try {
 } catch (Exception $e) {
     http_response_code(500);
     echo json_encode([
-        'error' => 'An internal server error occurred.',
-        'details' => $e->getMessage()
+        'error' => 'An internal server error occurred.'
     ]);
 }

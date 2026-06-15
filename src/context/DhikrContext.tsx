@@ -110,7 +110,6 @@ export function DhikrProvider({ children }: { children: ReactNode }) {
     try {
       setSyncError(null);
       const data = await apiRequest('fetch', 'POST');
-      const today = getTodayDate();
       
       const items = data.dhikrs.map((d: any) => {
         const dbDhikr: Dhikr = {
@@ -123,13 +122,6 @@ export function DhikrProvider({ children }: { children: ReactNode }) {
           last_reset_date: d.last_reset_date,
           created_at: d.created_at,
         };
-        
-        // Auto-reset daily count if day changed
-        if (dbDhikr.last_reset_date !== today) {
-          apiRequest('reset', 'POST', { id: dbDhikr.id }).catch(err => {
-            console.debug('Failed to auto-reset daily count on server:', err);
-          });
-        }
         
         return toUIDhikr(dbDhikr, pendingIncrementsRef.current[dbDhikr.id]?.delta || 0);
       });
@@ -182,7 +174,10 @@ export function DhikrProvider({ children }: { children: ReactNode }) {
     } catch (e) {
       console.error('Failed to sync batch:', e);
       if (pendingIncrementsRef.current[id]) {
-        pendingIncrementsRef.current[id].delta += deltaToSync;
+        // Only restore the original delta if no new increments were added during flight
+        if (pendingIncrementsRef.current[id].delta === 0) {
+          pendingIncrementsRef.current[id].delta += deltaToSync;
+        }
         await savePendingDeltasToCache();
       }
     }
@@ -245,12 +240,14 @@ export function DhikrProvider({ children }: { children: ReactNode }) {
       }
     } catch (e) {
       console.error('Failed to sync pending immediate:', e);
-      // Restore deltas on failure
       Object.keys(deltasToSync).forEach((id) => {
         if (!pendingIncrementsRef.current[id]) {
           pendingIncrementsRef.current[id] = { delta: 0, timeout: null };
         }
-        pendingIncrementsRef.current[id].delta += deltasToSync[id];
+        // Only restore if no new increments were added during flight
+        if (pendingIncrementsRef.current[id].delta === 0) {
+          pendingIncrementsRef.current[id].delta += deltasToSync[id];
+        }
       });
       await savePendingDeltasToCache();
     }
@@ -332,18 +329,68 @@ export function DhikrProvider({ children }: { children: ReactNode }) {
     };
   }, [syncAllPendingImmediate]);
 
-  // 5. Web beforeunload Event Listener (Sync on Browser Close / Tab Close)
+  // 5. Web beforeunload Event Listener — sync via keepalive fetch
+  const lastKnownTokenRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!user) return;
+    lastKnownTokenRef.current = user.session_token;
+  }, [user]);
+
+  const syncAllDeltasKeepalive = useCallback(async () => {
+    if (!user) return;
+    const ids = Object.keys(pendingIncrementsRef.current);
+    const deltasToSync: Record<string, number> = {};
+    ids.forEach((id) => {
+      const pending = pendingIncrementsRef.current[id];
+      if (pending && pending.delta !== 0) {
+        deltasToSync[id] = pending.delta;
+        pending.delta = 0;
+      }
+    });
+    if (Object.keys(deltasToSync).length === 0) return;
+    await savePendingDeltasToCache();
+    const baseUrl = typeof window !== 'undefined'
+      ? `${window.location.origin}/api/index.php`
+      : '/api/index.php';
+    const token = lastKnownTokenRef.current;
+    if (!token) return;
+    const url = `${baseUrl}?action=sync&_token=${encodeURIComponent(token)}`;
+    try {
+      await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ deltas: deltasToSync }),
+        keepalive: true,
+      });
+    } catch (e) {
+      console.error('Keepalive sync failed:', e);
+    }
+  }, [user, savePendingDeltasToCache]);
+
   useEffect(() => {
     if (Platform.OS === 'web') {
       const handleBeforeUnload = () => {
-        syncAllPendingImmediate();
+        const ids = Object.keys(pendingIncrementsRef.current);
+        const deltasToSync: Record<string, number> = {};
+        ids.forEach((id) => {
+          const pending = pendingIncrementsRef.current[id];
+          if (pending && pending.delta !== 0) {
+            deltasToSync[id] = pending.delta;
+          }
+        });
+        if (Object.keys(deltasToSync).length === 0) return;
+        const baseUrl = `${window.location.origin}/api/index.php`;
+        const token = lastKnownTokenRef.current;
+        if (!token) return;
+        const url = `${baseUrl}?action=sync&_token=${encodeURIComponent(token)}`;
+        navigator.sendBeacon(url, JSON.stringify({ deltas: deltasToSync }));
       };
       window.addEventListener('beforeunload', handleBeforeUnload);
       return () => {
         window.removeEventListener('beforeunload', handleBeforeUnload);
       };
     }
-  }, [syncAllPendingImmediate]);
+  }, []);
 
   // 6. Web online event — sync immediately when connectivity returns
   useEffect(() => {

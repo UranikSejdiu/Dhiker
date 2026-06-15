@@ -40,3 +40,9 @@ example
 # generated native folders
 /ios
 /android
+
+# PHP config (Plesk credentials — don't sync)
+public/api/config.php
+public/api/db.php
+dist/api/config.php
+dist/api/db.php

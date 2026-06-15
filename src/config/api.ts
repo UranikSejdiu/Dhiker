@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Local development fallback API domain. 
 // Replace this with your Plesk domain (e.g. 'https://yourdomain.com') when running locally!
-const DEV_API_URL = 'https://dhiker.onrender.com';
+const DEV_API_URL = 'https://dhikr.uranik.sejdiu.net';
 
 /**
  * Resolves the absolute or relative URL for the PHP API based on the environment.

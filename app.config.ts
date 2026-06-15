@@ -39,7 +39,7 @@ try {
 
 export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
-  name: 'Dhikr Counter',
+  name: 'My Dhikr Counter',
   slug: 'dhikr-counter',
   version: version,
   orientation: 'portrait',
@@ -64,8 +64,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   web: {
     output: 'static',
     favicon: './assets/images/favicon.png',
-    name: 'Dhikr Counter',
-    shortName: 'Dhikr',
+    name: 'My Dhikr Counter',
+    shortName: 'My Dhikr',
     // @ts-ignore
     display: 'standalone',
     backgroundColor: '#060D1B',

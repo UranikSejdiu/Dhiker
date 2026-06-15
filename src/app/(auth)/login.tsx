@@ -219,26 +219,28 @@ export default function LoginScreen() {
             </LinearGradient>
           </TouchableOpacity>
 
-          {/* Google Auth Button */}
-          <TouchableOpacity
-            activeOpacity={0.85}
-            onPress={async () => {
-              setIsLoading(true);
-              try {
-                await loginWithGoogle();
-              } catch (err: any) {
-                setError(err.message || 'Failed to sign in with Google');
-                setIsLoading(false);
-              }
-            }}
-            disabled={isLoading}
-            style={styles.googleButtonWrapper}
-          >
-            <View style={styles.googleButton}>
-              <Text style={styles.googleButtonIcon}>G</Text>
-              <Text style={styles.googleButtonText}>{t('continueGoogle')}</Text>
-            </View>
-          </TouchableOpacity>
+           {/* Google Auth Button */}
+           <TouchableOpacity
+             activeOpacity={0.85}
+             onPress={async () => {
+               setIsLoading(true);
+               try {
+                 await loginWithGoogle();
+               } catch (err: any) {
+                 setError(err.message || 'Failed to sign in with Google');
+                 setIsLoading(false);
+               }
+             }}
+             disabled={isLoading}
+             style={styles.googleButtonWrapper}
+           >
+             <View style={styles.googleButton}>
+               <View style={styles.googleIconContainer}>
+                 <Text style={styles.googleIconText}>G</Text>
+               </View>
+               <Text style={styles.googleButtonText}>{t('continueGoogle')}</Text>
+             </View>
+           </TouchableOpacity>
 
           {/* Divider */}
           <View style={styles.dividerContainer}>
@@ -411,22 +413,36 @@ const getStyles = (colors: ThemeColors) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.surface,
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: colors.card,
+    borderColor: '#DADCE0',
     borderRadius: 14,
-    paddingVertical: 16,
+    paddingVertical: 15,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 3,
   },
-  googleButtonIcon: {
-    color: colors.primary,
-    fontSize: 20,
-    fontWeight: '800',
-    marginRight: 12,
+  googleIconContainer: {
+    width: 22,
+    height: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 16,
+  },
+  googleIconText: {
+    color: '#4285F4',
+    fontSize: 22,
+    fontWeight: '700',
+    fontFamily: 'Georgia, serif',
+    marginTop: Platform.OS === 'ios' ? -2 : -1,
   },
   googleButtonText: {
-    color: colors.text,
+    color: '#1F1F1F',
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '500',
+    letterSpacing: 0.3,
   },
   dividerContainer: {
     flexDirection: 'row',

@@ -1,21 +1,41 @@
 import { ExpoConfig, ConfigContext } from 'expo/config';
 import { execSync } from 'child_process';
 
+import fs from 'fs';
+import path from 'path';
+
 function getGitVersion(): string {
   try {
     const commitCount = execSync('git rev-list --count HEAD', { encoding: 'utf-8' }).trim();
-    const shortHash = execSync('git rev-parse --short HEAD', { encoding: 'utf-8' }).trim();
     return `1.0.${commitCount}`;
   } catch {
     return '1.0.0';
   }
 }
 
+const version = getGitVersion();
+
+// Write the version to a static file so the app can import it directly
+try {
+  const versionFilePath = path.join(__dirname, 'src/constants/version.ts');
+  const dirPath = path.dirname(versionFilePath);
+  if (!fs.existsSync(dirPath)) {
+    fs.mkdirSync(dirPath, { recursive: true });
+  }
+  fs.writeFileSync(
+    versionFilePath,
+    `// Generated automatically by app.config.ts. Do not edit.\nexport const APP_VERSION = '${version}';\n`,
+    'utf-8'
+  );
+} catch (err) {
+  console.warn('Failed to write version file:', err);
+}
+
 export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
   name: 'Dhikr Counter',
   slug: 'dhikr-counter',
-  version: getGitVersion(),
+  version: version,
   orientation: 'portrait',
   icon: './assets/images/icon.png',
   scheme: 'dhikrcounter',

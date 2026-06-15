@@ -118,27 +118,6 @@ export default function CounterScreen() {
     }
   }, [user]);
 
-  // Sync preferences when tab becomes visible (app open / tab switch)
-  useEffect(() => {
-    if (!user || Platform.OS !== 'web') return;
-    const syncPrefs = async () => {
-      if (document.visibilityState !== 'visible') return;
-      try {
-        const data = await apiRequest('get_profile', 'POST');
-        if (data.user) {
-          if (data.user.theme && data.user.theme !== themeName && data.user.theme in predefinedThemes) {
-            setTheme(data.user.theme as ThemeName);
-          }
-          if (data.user.language && data.user.language !== language && ['en','de','fr','sq'].includes(data.user.language)) {
-            setLanguage(data.user.language as LanguageCode);
-          }
-        }
-      } catch {}
-    };
-    document.addEventListener('visibilitychange', syncPrefs);
-    return () => document.removeEventListener('visibilitychange', syncPrefs);
-  }, [user, themeName, language]);
-
   const clearWarning = () => {
     if (showLimitWarning) setShowLimitWarning(false);
   };
@@ -529,7 +508,21 @@ export default function CounterScreen() {
               <View style={styles.settingsCard}>
                 <TouchableOpacity
                   style={styles.settingsRow}
-                  onPress={async () => { await refreshDhikrs(); }}
+                  onPress={async () => {
+                    await refreshDhikrs();
+                    // Also sync preferences
+                    try {
+                      const data = await apiRequest('get_profile', 'POST');
+                      if (data.user) {
+                        if (data.user.theme && data.user.theme in predefinedThemes && data.user.theme !== themeName) {
+                          setTheme(data.user.theme as ThemeName);
+                        }
+                        if (data.user.language && ['en','de','fr','sq'].includes(data.user.language) && data.user.language !== language) {
+                          setLanguage(data.user.language as LanguageCode);
+                        }
+                      }
+                    } catch {}
+                  }}
                   disabled={dhikrLoading}
                 >
                   <Text style={styles.settingsRowLabel}>{dhikrLoading ? 'Syncing...' : 'Refresh from server'}</Text>
@@ -542,7 +535,20 @@ export default function CounterScreen() {
                 {syncError ? (
                   <>
                     <View style={styles.settingsDivider} />
-                    <TouchableOpacity style={styles.settingsRow} onPress={async () => { await refreshDhikrs(); }}>
+                    <TouchableOpacity style={styles.settingsRow} onPress={async () => {
+                      await refreshDhikrs();
+                      try {
+                        const data = await apiRequest('get_profile', 'POST');
+                        if (data.user) {
+                          if (data.user.theme && data.user.theme in predefinedThemes && data.user.theme !== themeName) {
+                            setTheme(data.user.theme as ThemeName);
+                          }
+                          if (data.user.language && ['en','de','fr','sq'].includes(data.user.language) && data.user.language !== language) {
+                            setLanguage(data.user.language as LanguageCode);
+                          }
+                        }
+                      } catch {}
+                    }}>
                       <Text style={[styles.settingsRowLabel, { color: colors.error }]}>Retry sync</Text>
                     </TouchableOpacity>
                   </>

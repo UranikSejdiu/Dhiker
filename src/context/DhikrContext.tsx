@@ -235,6 +235,14 @@ export function DhikrProvider({ children }: { children: ReactNode }) {
       pendingIncrementsRef.current[id].delta = 0;
     }
 
+    // Optimistically update React state for instant UI feedback
+    setDhikrs(current => current.map(d => {
+      if (d.id === id) {
+        return { ...d, dailyCount: 0, lastResetDate: getTodayDate() };
+      }
+      return d;
+    }));
+
     await updateDoc(doc(db, 'users', user.uid, 'dhikrs', id), {
       dailyCount: 0,
       lastResetDate: getTodayDate(),

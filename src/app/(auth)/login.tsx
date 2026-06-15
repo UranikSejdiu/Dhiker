@@ -23,7 +23,7 @@ export default function LoginScreen() {
   const [emailFocused, setEmailFocused] = useState(false);
   const [passwordFocused, setPasswordFocused] = useState(false);
 
-  const { login } = useAuth();
+  const { login, loginWithGoogle } = useAuth();
   const router = useRouter();
 
   // Animated values
@@ -189,6 +189,27 @@ export default function LoginScreen() {
             </LinearGradient>
           </TouchableOpacity>
 
+          {/* Google Auth Button */}
+          <TouchableOpacity
+            activeOpacity={0.85}
+            onPress={async () => {
+              setIsLoading(true);
+              try {
+                await loginWithGoogle();
+              } catch (err: any) {
+                setError(err.message || 'Failed to sign in with Google');
+                setIsLoading(false);
+              }
+            }}
+            disabled={isLoading}
+            style={styles.googleButtonWrapper}
+          >
+            <View style={styles.googleButton}>
+              <Text style={styles.googleButtonIcon}>G</Text>
+              <Text style={styles.googleButtonText}>Continue with Google</Text>
+            </View>
+          </TouchableOpacity>
+
           {/* Divider */}
           <View style={styles.dividerContainer}>
             <View style={styles.dividerLine} />
@@ -352,6 +373,30 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: '700',
     letterSpacing: 0.8,
+  },
+  googleButtonWrapper: {
+    marginBottom: 24,
+  },
+  googleButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#0F1A2E',
+    borderWidth: 1,
+    borderColor: '#1A2744',
+    borderRadius: 14,
+    paddingVertical: 16,
+  },
+  googleButtonIcon: {
+    color: '#C9A84C',
+    fontSize: 20,
+    fontWeight: '800',
+    marginRight: 12,
+  },
+  googleButtonText: {
+    color: '#F5F0E8',
+    fontSize: 16,
+    fontWeight: '600',
   },
   dividerContainer: {
     flexDirection: 'row',

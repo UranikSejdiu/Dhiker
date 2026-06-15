@@ -1,9 +1,16 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { supabase } from '../config/supabase';
-import { User } from '@supabase/supabase-js';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { apiRequest } from '../config/api';
+
+export interface AppUser {
+  id: string;
+  email: string;
+  display_name: string;
+  session_token: string;
+}
 
 interface AuthContextType {
-  user: User | null;
+  user: AppUser | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
   loginWithGoogle: () => Promise<void>;
@@ -13,60 +20,60 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+const USER_SESSION_KEY = '@my_dhikr_user_session';
+
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<AppUser | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check active sessions and sets the user
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
-
-    // Listen for changes on auth state (sign in, sign out, etc.)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
-
-    return () => subscription.unsubscribe();
+    // Restore user session on startup
+    const restoreSession = async () => {
+      try {
+        const sessionJson = await AsyncStorage.getItem(USER_SESSION_KEY);
+        if (sessionJson) {
+          setUser(JSON.parse(sessionJson));
+        }
+      } catch (err) {
+        console.warn('Failed to restore user session:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    restoreSession();
   }, []);
 
   const login = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-    if (error) throw error;
+    const data = await apiRequest('login', 'POST', { email, password });
+    if (data.user) {
+      await AsyncStorage.setItem(USER_SESSION_KEY, JSON.stringify(data.user));
+      setUser(data.user);
+    } else {
+      throw new Error('Invalid login response from server.');
+    }
   };
 
   const register = async (email: string, password: string, displayName: string) => {
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          display_name: displayName,
-        },
-      },
-    });
-    if (error) throw error;
+    const data = await apiRequest('register', 'POST', { email, password, displayName });
+    if (data.user) {
+      await AsyncStorage.setItem(USER_SESSION_KEY, JSON.stringify(data.user));
+      setUser(data.user);
+    } else {
+      throw new Error('Invalid registration response from server.');
+    }
   };
 
   const logout = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) throw error;
+    try {
+      await AsyncStorage.removeItem(USER_SESSION_KEY);
+    } catch (err) {
+      console.warn('Failed to remove session key:', err);
+    }
+    setUser(null);
   };
 
   const loginWithGoogle = async () => {
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: typeof window !== 'undefined' ? window.location.origin : undefined,
-      },
-    });
-    if (error) throw error;
+    throw new Error('Google Sign-In is not supported in self-hosted mode.');
   };
 
   return (

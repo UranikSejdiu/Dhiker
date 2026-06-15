@@ -371,7 +371,7 @@ export default function CounterScreen() {
                     {item.dailyLimit !== null ? (
                       <Text style={[
                         styles.dhikrCardDaily,
-                        { color: item.dailyCount >= item.dailyLimit ? colors.error : item.dailyCount >= item.dailyLimit * 0.7 ? colors.warning : colors.success }
+                        { color: item.dailyCount >= item.dailyLimit ? colors.success : item.dailyCount >= item.dailyLimit * 0.7 ? colors.warning : colors.error }
                       ]}>
                         {t('todayLabel')} {item.dailyCount}/{item.dailyLimit}
                       </Text>

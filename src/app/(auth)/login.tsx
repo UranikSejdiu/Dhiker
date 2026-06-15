@@ -12,7 +12,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useAuth } from '../../context/AuthContext';
 import { useAppTheme } from '../../context/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
@@ -26,10 +26,11 @@ export default function LoginScreen() {
   const [emailFocused, setEmailFocused] = useState(false);
   const [passwordFocused, setPasswordFocused] = useState(false);
 
-  const { login, loginWithGoogle, user } = useAuth();
+  const { login, loginWithGoogle, user, loginWithToken } = useAuth();
   const { colors } = useAppTheme();
   const { t } = useLanguage();
   const router = useRouter();
+  const { token } = useLocalSearchParams<{ token?: string }>();
 
   const styles = getStyles(colors);
 
@@ -39,6 +40,21 @@ export default function LoginScreen() {
       router.replace('/(tabs)/counter');
     }
   }, [user]);
+
+  // Authenticate user when Google redirects them back with a session token
+  useEffect(() => {
+    if (token) {
+      setIsLoading(true);
+      loginWithToken(token)
+        .then(() => {
+          // Redirect to counter will happen automatically in the user useEffect
+        })
+        .catch((err: any) => {
+          setError(err.message || 'Failed to authenticate Google session.');
+          setIsLoading(false);
+        });
+    }
+  }, [token]);
 
   // Animated values
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -203,7 +219,33 @@ export default function LoginScreen() {
             </LinearGradient>
           </TouchableOpacity>
 
+          {/* Google Auth Button */}
+          <TouchableOpacity
+            activeOpacity={0.85}
+            onPress={async () => {
+              setIsLoading(true);
+              try {
+                await loginWithGoogle();
+              } catch (err: any) {
+                setError(err.message || 'Failed to sign in with Google');
+                setIsLoading(false);
+              }
+            }}
+            disabled={isLoading}
+            style={styles.googleButtonWrapper}
+          >
+            <View style={styles.googleButton}>
+              <Text style={styles.googleButtonIcon}>G</Text>
+              <Text style={styles.googleButtonText}>{t('continueGoogle')}</Text>
+            </View>
+          </TouchableOpacity>
 
+          {/* Divider */}
+          <View style={styles.dividerContainer}>
+            <View style={styles.dividerLine} />
+            <Text style={styles.dividerText}>✦</Text>
+            <View style={styles.dividerLine} />
+          </View>
 
           {/* Sign Up Link */}
           <TouchableOpacity

@@ -224,7 +224,33 @@ export default function RegisterScreen() {
             </LinearGradient>
           </TouchableOpacity>
 
+          {/* Google Auth Button */}
+          <TouchableOpacity
+            activeOpacity={0.85}
+            onPress={async () => {
+              setIsLoading(true);
+              try {
+                await loginWithGoogle();
+              } catch (err: any) {
+                setError(err.message || 'Failed to sign up with Google');
+                setIsLoading(false);
+              }
+            }}
+            disabled={isLoading}
+            style={styles.googleButtonWrapper}
+          >
+            <View style={styles.googleButton}>
+              <Text style={styles.googleButtonIcon}>G</Text>
+              <Text style={styles.googleButtonText}>{t('continueGoogle')}</Text>
+            </View>
+          </TouchableOpacity>
 
+          {/* Divider */}
+          <View style={styles.dividerContainer}>
+            <View style={styles.dividerLine} />
+            <Text style={styles.dividerText}>✦</Text>
+            <View style={styles.dividerLine} />
+          </View>
 
           {/* Sign In Link */}
           <TouchableOpacity

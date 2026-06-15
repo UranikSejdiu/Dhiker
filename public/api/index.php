@@ -79,6 +79,96 @@ $input = getJsonInput();
 
 try {
     switch ($action) {
+        case 'google_login':
+            $authUrl = "https://accounts.google.com/o/oauth2/v2/auth?" . http_build_query([
+                'client_id' => GOOGLE_CLIENT_ID,
+                'redirect_uri' => GOOGLE_REDIRECT_URI,
+                'response_type' => 'code',
+                'scope' => 'email profile',
+                'state' => 'google_oauth_state'
+            ]);
+            header("Location: " . $authUrl);
+            exit;
+
+        case 'google_callback':
+            $code = isset($_GET['code']) ? $_GET['code'] : '';
+            if (empty($code)) {
+                die("OAuth Error: No authorization code received from Google.");
+            }
+            
+            // Exchange code for tokens
+            $ch = curl_init("https://oauth2.googleapis.com/token");
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_POST, true);
+            curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query([
+                'code' => $code,
+                'client_id' => GOOGLE_CLIENT_ID,
+                'client_secret' => GOOGLE_CLIENT_SECRET,
+                'redirect_uri' => GOOGLE_REDIRECT_URI,
+                'grant_type' => 'authorization_code'
+            ]));
+            $response = curl_exec($ch);
+            curl_close($ch);
+            
+            $tokenData = json_decode($response, true);
+            if (isset($tokenData['error'])) {
+                die("OAuth Error during exchange: " . $tokenData['error_description']);
+            }
+            
+            $accessToken = $tokenData['access_token'];
+            
+            // Fetch profile info
+            $ch = curl_init("https://www.googleapis.com/oauth2/v3/userinfo");
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_HTTPHEADER, [
+                "Authorization: Bearer " . $accessToken
+            ]);
+            $userInfoResponse = curl_exec($ch);
+            curl_close($ch);
+            
+            $userInfo = json_decode($userInfoResponse, true);
+            if (!isset($userInfo['email'])) {
+                die("OAuth Error: Failed to retrieve user email from Google.");
+            }
+            
+            $email = $userInfo['email'];
+            $name = isset($userInfo['name']) ? $userInfo['name'] : 'Google User';
+            
+            // Query user in MySQL
+            $stmt = $db->prepare("SELECT * FROM users WHERE email = ?");
+            $stmt->execute([$email]);
+            $user = $stmt->fetch();
+            
+            $sessionToken = bin2hex(random_bytes(32));
+            
+            if ($user) {
+                $stmt = $db->prepare("UPDATE users SET session_token = ? WHERE id = ?");
+                $stmt->execute([$sessionToken, $user['id']]);
+                $userId = $user['id'];
+            } else {
+                $userId = generateUuid();
+                $randomPasswordHash = password_hash(bin2hex(random_bytes(16)), PASSWORD_BCRYPT);
+                
+                $stmt = $db->prepare("INSERT INTO users (id, email, password_hash, display_name, session_token) VALUES (?, ?, ?, ?, ?)");
+                $stmt->execute([$userId, $email, $randomPasswordHash, $name, $sessionToken]);
+            }
+            
+            // Redirect back to login PWA with token query param
+            header("Location: /login?token=" . urlencode($sessionToken));
+            exit;
+
+        case 'get_profile':
+            $user = authenticate($db);
+            echo json_encode([
+                'user' => [
+                    'id' => $user['id'],
+                    'email' => $user['email'],
+                    'display_name' => $user['display_name'],
+                    'session_token' => $user['session_token']
+                ]
+            ]);
+            break;
+
         case 'register':
             $email = isset($input['email']) ? trim($input['email']) : '';
             $password = isset($input['password']) ? $input['password'] : '';

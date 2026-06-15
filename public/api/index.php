@@ -1,6 +1,10 @@
 <?php
 // PHP Backend API Router for Dhikr Counter
 // Exposes API endpoints for PWA Client Authentication and Synchronization
+//
+// Migration: Run once on Plesk MySQL to add theme/language columns:
+//   ALTER TABLE users ADD COLUMN theme VARCHAR(50) DEFAULT 'dark-gold';
+//   ALTER TABLE users ADD COLUMN language VARCHAR(10) DEFAULT 'en';
 
 // CORS Headers
 header("Access-Control-Allow-Origin: *");
@@ -403,6 +407,30 @@ try {
             
             $stmt = $db->prepare("UPDATE dhikrs SET daily_count = 0, last_reset_date = ? WHERE id = ? AND user_id = ?");
             $stmt->execute([$today, $id, $user['id']]);
+            
+            echo json_encode(['success' => true]);
+            break;
+            
+        case 'save_preferences':
+            $user = authenticate($db, $input);
+            $theme = isset($input['theme']) ? $input['theme'] : null;
+            $language = isset($input['language']) ? $input['language'] : null;
+            
+            if ($theme !== null || $language !== null) {
+                $fields = [];
+                $params = [];
+                if ($theme !== null) {
+                    $fields[] = 'theme = ?';
+                    $params[] = $theme;
+                }
+                if ($language !== null) {
+                    $fields[] = 'language = ?';
+                    $params[] = $language;
+                }
+                $params[] = $user['id'];
+                $stmt = $db->prepare("UPDATE users SET " . implode(', ', $fields) . " WHERE id = ?");
+                $stmt->execute($params);
+            }
             
             echo json_encode(['success' => true]);
             break;

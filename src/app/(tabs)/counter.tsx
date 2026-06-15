@@ -20,6 +20,7 @@ import { useAppTheme } from '../../context/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { ThemeColors, predefinedThemes, ThemeName } from '../../utils/theme';
 import { LanguageCode } from '../../i18n/translations';
+import { apiRequest } from '../../config/api';
 import * as Haptics from 'expo-haptics';
 import Fireworks from '../../components/Fireworks';
 import FlagIcon from '../../components/FlagIcon';
@@ -105,6 +106,17 @@ export default function CounterScreen() {
       decrementPulseAnim.stopAnimation();
     }
   }, [mode]);
+
+  // Sync server preferences (theme/language) on login
+  useEffect(() => {
+    if (!user) return;
+    if (user.theme && user.theme in predefinedThemes) {
+      setTheme(user.theme as ThemeName);
+    }
+    if (user.language && ['en','de','fr','sq'].includes(user.language)) {
+      setLanguage(user.language as LanguageCode);
+    }
+  }, [user]);
 
   const clearWarning = () => {
     if (showLimitWarning) setShowLimitWarning(false);
@@ -447,7 +459,10 @@ export default function CounterScreen() {
                       return (
                         <TouchableOpacity
                           key={tName}
-                          onPress={() => setTheme(tName as ThemeName)}
+                          onPress={() => {
+                            setTheme(tName as ThemeName);
+                            apiRequest('save_preferences', 'POST', { theme: tName }).catch(() => {});
+                          }}
                           style={[
                             styles.swatch,
                             { backgroundColor: tColors.background },
@@ -472,7 +487,10 @@ export default function CounterScreen() {
                       styles.languageBtn,
                       language === l.code && styles.languageBtnActive
                     ]}
-                    onPress={() => setLanguage(l.code as LanguageCode)}
+                    onPress={() => {
+                      setLanguage(l.code as LanguageCode);
+                      apiRequest('save_preferences', 'POST', { language: l.code }).catch(() => {});
+                    }}
                   >
                     <FlagIcon countryCode={l.countryCode} size={20} />
                     <Text style={[

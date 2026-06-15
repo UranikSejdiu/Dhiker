@@ -8,6 +8,8 @@ export interface AppUser {
   email: string;
   display_name: string;
   session_token: string;
+  theme?: string;
+  language?: string;
 }
 
 interface AuthContextType {

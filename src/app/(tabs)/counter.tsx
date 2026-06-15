@@ -118,10 +118,11 @@ export default function CounterScreen() {
     }
   }, [user]);
 
-  // Poll server preferences every 15s for cross-device sync
+  // Sync preferences when tab becomes visible (app open / tab switch)
   useEffect(() => {
     if (!user || Platform.OS !== 'web') return;
-    const pollPrefs = async () => {
+    const syncPrefs = async () => {
+      if (document.visibilityState !== 'visible') return;
       try {
         const data = await apiRequest('get_profile', 'POST');
         if (data.user) {
@@ -134,8 +135,8 @@ export default function CounterScreen() {
         }
       } catch {}
     };
-    const id = setInterval(pollPrefs, 15000);
-    return () => clearInterval(id);
+    document.addEventListener('visibilitychange', syncPrefs);
+    return () => document.removeEventListener('visibilitychange', syncPrefs);
   }, [user, themeName, language]);
 
   const clearWarning = () => {

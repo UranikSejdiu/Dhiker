@@ -303,6 +303,16 @@ export function DhikrProvider({ children }: { children: ReactNode }) {
     fetchDhikrs();
   }, [user, fetchDhikrs]);
 
+  // 2b. Web polling for real-time cross-device sync
+  useEffect(() => {
+    if (!user || Platform.OS !== 'web') return;
+    const poll = () => {
+      if (document.visibilityState === 'visible') fetchDhikrs();
+    };
+    const id = setInterval(poll, 10000);
+    return () => clearInterval(id);
+  }, [user, fetchDhikrs]);
+
   // 3. Keep cache updated with local UI state (optimistic updates, deletions, etc.)
   useEffect(() => {
     if (user && !loading) {

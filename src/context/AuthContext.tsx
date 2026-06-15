@@ -72,6 +72,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = async () => {
+    // Invalidate token server-side first
+    try {
+      await apiRequest('logout', 'POST');
+    } catch (err) {
+      console.warn('Failed to logout on server:', err);
+    }
     try {
       await AsyncStorage.removeItem(USER_SESSION_KEY);
     } catch (err) {

@@ -2,9 +2,10 @@
 // PHP Backend API Router for Dhikr Counter
 // Exposes API endpoints for PWA Client Authentication and Synchronization
 //
-// Migration: Run once on Plesk MySQL to add theme/language columns:
+// Migration: Run once on Plesk MySQL:
 //   ALTER TABLE users ADD COLUMN theme VARCHAR(50) DEFAULT 'dark-gold';
 //   ALTER TABLE users ADD COLUMN language VARCHAR(10) DEFAULT 'en';
+//   ALTER TABLE users ADD COLUMN token_expires_at DATETIME DEFAULT NULL;
 
 // CORS Headers — reflect the requesting origin instead of wildcard
 $corsOrigin = isset($_SERVER['HTTP_ORIGIN']) ? $_SERVER['HTTP_ORIGIN'] : '*';
@@ -81,6 +82,14 @@ function authenticate($db, $input = []) {
         $stmt->execute([$token]);
         $user = $stmt->fetch();
         if ($user) {
+            // Check token expiry (null = no expiry / legacy)
+            if (!empty($user['token_expires_at']) && strtotime($user['token_expires_at']) < time()) {
+                $stmt = $db->prepare("UPDATE users SET session_token = NULL, token_expires_at = NULL WHERE id = ?");
+                $stmt->execute([$user['id']]);
+                http_response_code(401);
+                echo json_encode(['error' => 'Session expired. Please log in again.']);
+                exit;
+            }
             return $user;
         }
     }
@@ -227,19 +236,20 @@ try {
             $stmt->execute([$email]);
             $user = $stmt->fetch();
             
+            $expiresAt = date('Y-m-d H:i:s', strtotime('+6 months'));
             if ($user) {
                 // Reuse existing token so multiple devices stay active
                 $sessionToken = !empty($user['session_token']) ? $user['session_token'] : bin2hex(random_bytes(32));
-                $stmt = $db->prepare("UPDATE users SET session_token = ? WHERE id = ?");
-                $stmt->execute([$sessionToken, $user['id']]);
+                $stmt = $db->prepare("UPDATE users SET session_token = ?, token_expires_at = ? WHERE id = ?");
+                $stmt->execute([$sessionToken, $expiresAt, $user['id']]);
                 $userId = $user['id'];
             } else {
                 $sessionToken = bin2hex(random_bytes(32));
                 $userId = generateUuid();
                 $randomPasswordHash = password_hash(bin2hex(random_bytes(16)), PASSWORD_BCRYPT);
                 
-                $stmt = $db->prepare("INSERT INTO users (id, email, password_hash, display_name, session_token) VALUES (?, ?, ?, ?, ?)");
-                $stmt->execute([$userId, $email, $randomPasswordHash, $name, $sessionToken]);
+                $stmt = $db->prepare("INSERT INTO users (id, email, password_hash, display_name, session_token, token_expires_at) VALUES (?, ?, ?, ?, ?, ?)");
+                $stmt->execute([$userId, $email, $randomPasswordHash, $name, $sessionToken, $expiresAt]);
             }
             
             // Redirect back to login PWA with token query param
@@ -284,22 +294,23 @@ try {
                 break;
             }
             
-            // Check if user exists
+            // Check if user exists — use generic message to prevent email enumeration
             $stmt = $db->prepare("SELECT id FROM users WHERE email = ?");
             $stmt->execute([$email]);
             if ($stmt->fetch()) {
                 http_response_code(400);
-                echo json_encode(['error' => 'A user with this email already exists.']);
+                echo json_encode(['error' => 'Registration failed. Please check your details and try again.']);
                 break;
             }
             
+            $expiresAt = date('Y-m-d H:i:s', strtotime('+6 months'));
             // Create user
             $userId = generateUuid();
             $hash = password_hash($password, PASSWORD_BCRYPT);
             $token = bin2hex(random_bytes(32));
             
-            $stmt = $db->prepare("INSERT INTO users (id, email, password_hash, display_name, session_token) VALUES (?, ?, ?, ?, ?)");
-            $stmt->execute([$userId, $email, $hash, $displayName, $token]);
+            $stmt = $db->prepare("INSERT INTO users (id, email, password_hash, display_name, session_token, token_expires_at) VALUES (?, ?, ?, ?, ?, ?)");
+            $stmt->execute([$userId, $email, $hash, $displayName, $token, $expiresAt]);
             
             echo json_encode([
                 'user' => [
@@ -311,6 +322,13 @@ try {
             ]);
             break;
             
+        case 'logout':
+            $user = authenticate($db, $input);
+            $stmt = $db->prepare("UPDATE users SET session_token = NULL, token_expires_at = NULL WHERE id = ?");
+            $stmt->execute([$user['id']]);
+            echo json_encode(['success' => true]);
+            break;
+
         case 'login':
             checkRateLimit('login');
             $email = isset($input['email']) ? trim($input['email']) : '';
@@ -332,10 +350,11 @@ try {
                 break;
             }
             
+            $expiresAt = date('Y-m-d H:i:s', strtotime('+6 months'));
             // Reuse existing token so multiple devices stay active
             $token = !empty($user['session_token']) ? $user['session_token'] : bin2hex(random_bytes(32));
-            $stmt = $db->prepare("UPDATE users SET session_token = ? WHERE id = ?");
-            $stmt->execute([$token, $user['id']]);
+            $stmt = $db->prepare("UPDATE users SET session_token = ?, token_expires_at = ? WHERE id = ?");
+            $stmt->execute([$token, $expiresAt, $user['id']]);
             
             echo json_encode([
                 'user' => [

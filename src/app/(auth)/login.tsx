@@ -49,6 +49,10 @@ export default function LoginScreen() {
   // Authenticate user when Google redirects them back with a session token
   useEffect(() => {
     if (token) {
+      // Clean token from URL bar / browser history immediately
+      if (Platform.OS === 'web' && typeof window !== 'undefined' && 'history' in window) {
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
       setIsLoading(true);
       loginWithToken(token)
         .then(() => {

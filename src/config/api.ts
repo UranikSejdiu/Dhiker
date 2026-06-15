@@ -63,6 +63,15 @@ export async function apiRequest(action: string, method: 'GET' | 'POST', body?: 
   const data = await response.json();
   
   if (!response.ok) {
+    // If session expired, clear local storage and redirect to login
+    if (data.error === 'Session expired. Please log in again.') {
+      try {
+        await AsyncStorage.removeItem('@my_dhikr_user_session');
+      } catch {}
+      if (typeof window !== 'undefined') {
+        window.location.href = '/login';
+      }
+    }
     throw new Error(data.error || `API Request failed with status ${response.status}`);
   }
   

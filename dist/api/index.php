@@ -159,13 +159,14 @@ try {
             $stmt->execute([$email]);
             $user = $stmt->fetch();
             
-            $sessionToken = bin2hex(random_bytes(32));
-            
             if ($user) {
+                // Reuse existing token so multiple devices stay active
+                $sessionToken = !empty($user['session_token']) ? $user['session_token'] : bin2hex(random_bytes(32));
                 $stmt = $db->prepare("UPDATE users SET session_token = ? WHERE id = ?");
                 $stmt->execute([$sessionToken, $user['id']]);
                 $userId = $user['id'];
             } else {
+                $sessionToken = bin2hex(random_bytes(32));
                 $userId = generateUuid();
                 $randomPasswordHash = password_hash(bin2hex(random_bytes(16)), PASSWORD_BCRYPT);
                 
@@ -247,8 +248,8 @@ try {
                 break;
             }
             
-            // Generate new session token on login
-            $token = bin2hex(random_bytes(32));
+            // Reuse existing token so multiple devices stay active
+            $token = !empty($user['session_token']) ? $user['session_token'] : bin2hex(random_bytes(32));
             $stmt = $db->prepare("UPDATE users SET session_token = ? WHERE id = ?");
             $stmt->execute([$token, $user['id']]);
             

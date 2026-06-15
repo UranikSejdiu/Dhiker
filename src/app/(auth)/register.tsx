@@ -14,6 +14,9 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../../context/AuthContext';
+import { useAppTheme } from '../../context/ThemeContext';
+import { useLanguage } from '../../context/LanguageContext';
+import { ThemeColors } from '../../utils/theme';
 
 export default function RegisterScreen() {
   const [displayName, setDisplayName] = useState('');
@@ -25,7 +28,11 @@ export default function RegisterScreen() {
   const [focusedField, setFocusedField] = useState<string | null>(null);
 
   const { register, loginWithGoogle } = useAuth();
+  const { colors } = useAppTheme();
+  const { t } = useLanguage();
   const router = useRouter();
+
+  const styles = getStyles(colors);
 
   // Animated values
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -54,9 +61,8 @@ export default function RegisterScreen() {
   }, []);
 
   const handleRegister = async () => {
-    // Validation
     if (!displayName.trim() || !email.trim() || !password.trim() || !confirmPassword.trim()) {
-      setError('Please fill in all fields');
+      setError(t('fillAllFields'));
       return;
     }
 
@@ -97,14 +103,14 @@ export default function RegisterScreen() {
   ) => (
     <View style={styles.inputWrapper}>
       <Text style={styles.inputLabel}>{label}</Text>
-      <TextInput
-        style={[
-          styles.input,
-          focusedField === fieldKey && styles.inputFocused,
-        ]}
-        placeholder={options.placeholder}
-        placeholderTextColor="#5A6478"
-        value={value}
+        <TextInput
+          style={[
+            styles.input,
+            focusedField === fieldKey && styles.inputFocused,
+          ]}
+          placeholder={options.placeholder}
+          placeholderTextColor={colors.textSecondary}
+          value={value}
         onChangeText={onChangeText}
         onFocus={() => setFocusedField(fieldKey)}
         onBlur={() => setFocusedField(null)}
@@ -131,7 +137,7 @@ export default function RegisterScreen() {
         {/* Decorative top accent */}
         <View style={styles.topAccent}>
           <LinearGradient
-            colors={['#C9A84C', '#D4B96A', '#C9A84C']}
+            colors={colors.gradientPrimary}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
             style={styles.accentLine}
@@ -151,9 +157,9 @@ export default function RegisterScreen() {
           <View style={styles.iconContainer}>
             <Text style={styles.crescentIcon}>☪</Text>
           </View>
-          <Text style={styles.appTitle}>Create Account</Text>
+          <Text style={styles.appTitle}>{t('signUpBtn')}</Text>
           <Text style={styles.bismillah}>بِسْمِ اللهِ</Text>
-          <Text style={styles.subtitle}>Begin your journey of remembrance</Text>
+          <Text style={styles.subtitle}>{t('subtitle')}</Text>
         </Animated.View>
 
         {/* Form */}
@@ -174,26 +180,26 @@ export default function RegisterScreen() {
           ) : null}
 
           {/* Display Name Input */}
-          {renderInput('Display Name', displayName, setDisplayName, 'displayName', {
-            placeholder: 'Enter your name',
+          {renderInput(t('displayNameLabel'), displayName, setDisplayName, 'displayName', {
+            placeholder: t('displayNameLabel'),
             autoCapitalize: 'words',
           })}
 
           {/* Email Input */}
-          {renderInput('Email', email, setEmail, 'email', {
-            placeholder: 'Enter your email',
+          {renderInput(t('emailLabel'), email, setEmail, 'email', {
+            placeholder: t('emailLabel'),
             keyboardType: 'email-address',
           })}
 
           {/* Password Input */}
-          {renderInput('Password', password, setPassword, 'password', {
-            placeholder: 'Create a password',
+          {renderInput(t('passwordLabel'), password, setPassword, 'password', {
+            placeholder: t('passwordLabel'),
             secureTextEntry: true,
           })}
 
           {/* Confirm Password Input */}
-          {renderInput('Confirm Password', confirmPassword, setConfirmPassword, 'confirmPassword', {
-            placeholder: 'Confirm your password',
+          {renderInput(t('passwordLabel'), confirmPassword, setConfirmPassword, 'confirmPassword', {
+            placeholder: t('passwordLabel'),
             secureTextEntry: true,
           })}
 
@@ -205,15 +211,15 @@ export default function RegisterScreen() {
             style={styles.buttonWrapper}
           >
             <LinearGradient
-              colors={['#C9A84C', '#B8963F', '#A6852F']}
+              colors={colors.gradientPrimary}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
               style={styles.createButton}
             >
               {isLoading ? (
-                <ActivityIndicator size="small" color="#060D1B" />
+                <ActivityIndicator size="small" color={colors.background} />
               ) : (
-                <Text style={styles.createButtonText}>Create Account</Text>
+                <Text style={styles.createButtonText}>{t('signUpBtn')}</Text>
               )}
             </LinearGradient>
           </TouchableOpacity>
@@ -235,7 +241,7 @@ export default function RegisterScreen() {
           >
             <View style={styles.googleButton}>
               <Text style={styles.googleButtonIcon}>G</Text>
-              <Text style={styles.googleButtonText}>Continue with Google</Text>
+              <Text style={styles.googleButtonText}>{t('continueGoogle')}</Text>
             </View>
           </TouchableOpacity>
 
@@ -253,8 +259,8 @@ export default function RegisterScreen() {
             style={styles.linkContainer}
           >
             <Text style={styles.linkText}>
-              Already have an account?{' '}
-              <Text style={styles.linkTextHighlight}>Sign In</Text>
+              {t('hasAccount')}{' '}
+              <Text style={styles.linkTextHighlight}>{t('signInBtn')}</Text>
             </Text>
           </TouchableOpacity>
         </Animated.View>
@@ -262,7 +268,7 @@ export default function RegisterScreen() {
         {/* Bottom decorative accent */}
         <View style={styles.bottomAccent}>
           <LinearGradient
-            colors={['transparent', '#C9A84C20', 'transparent']}
+            colors={['transparent', colors.primary + '20', 'transparent']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
             style={styles.bottomAccentLine}
@@ -273,10 +279,10 @@ export default function RegisterScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#060D1B',
+    backgroundColor: colors.background,
   },
   scrollContent: {
     flexGrow: 1,
@@ -301,13 +307,13 @@ const styles = StyleSheet.create({
     width: 72,
     height: 72,
     borderRadius: 36,
-    backgroundColor: '#0D1A2D',
+    backgroundColor: colors.surface,
     borderWidth: 2,
-    borderColor: '#C9A84C40',
+    borderColor: colors.border,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 14,
-    shadowColor: '#C9A84C',
+    shadowColor: colors.primary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 12,
@@ -315,39 +321,39 @@ const styles = StyleSheet.create({
   },
   crescentIcon: {
     fontSize: 34,
-    color: '#C9A84C',
+    color: colors.primary,
   },
   appTitle: {
     fontSize: 28,
     fontWeight: '700',
-    color: '#F5F0E8',
+    color: colors.text,
     letterSpacing: 0.8,
     marginBottom: 6,
   },
   bismillah: {
     fontSize: 20,
-    color: '#C9A84C',
+    color: colors.primary,
     marginBottom: 6,
     fontWeight: '300',
   },
   subtitle: {
     fontSize: 13,
-    color: '#8A9AB5',
+    color: colors.textSecondary,
     letterSpacing: 0.5,
   },
   formContainer: {
     width: '100%',
   },
   errorContainer: {
-    backgroundColor: '#2D1015',
+    backgroundColor: colors.error + '20',
     borderWidth: 1,
-    borderColor: '#E5484D40',
+    borderColor: colors.error + '40',
     borderRadius: 12,
     padding: 14,
     marginBottom: 18,
   },
   errorText: {
-    color: '#F5706C',
+    color: colors.error,
     fontSize: 14,
     textAlign: 'center',
     lineHeight: 20,
@@ -356,7 +362,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   inputLabel: {
-    color: '#C9A84C',
+    color: colors.primary,
     fontSize: 12,
     fontWeight: '600',
     marginBottom: 7,
@@ -364,19 +370,19 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
   input: {
-    backgroundColor: '#0D1A2D',
+    backgroundColor: colors.surface,
     borderWidth: 1.5,
-    borderColor: '#1A2744',
+    borderColor: colors.card,
     borderRadius: 14,
     paddingHorizontal: 18,
     paddingVertical: 15,
     fontSize: 16,
-    color: '#F5F0E8',
+    color: colors.text,
   },
   inputFocused: {
-    borderColor: '#C9A84C',
-    backgroundColor: '#0F1E35',
-    shadowColor: '#C9A84C',
+    borderColor: colors.primary,
+    backgroundColor: colors.surfaceLight,
+    shadowColor: colors.primary,
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.15,
     shadowRadius: 8,
@@ -391,14 +397,14 @@ const styles = StyleSheet.create({
     paddingVertical: 17,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#C9A84C',
+    shadowColor: colors.primary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.4,
     shadowRadius: 12,
     elevation: 6,
   },
   createButtonText: {
-    color: '#060D1B',
+    color: colors.background,
     fontSize: 17,
     fontWeight: '700',
     letterSpacing: 0.8,
@@ -410,20 +416,20 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#0F1A2E',
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: '#1A2744',
+    borderColor: colors.card,
     borderRadius: 14,
     paddingVertical: 16,
   },
   googleButtonIcon: {
-    color: '#C9A84C',
+    color: colors.primary,
     fontSize: 20,
     fontWeight: '800',
     marginRight: 12,
   },
   googleButtonText: {
-    color: '#F5F0E8',
+    color: colors.text,
     fontSize: 16,
     fontWeight: '600',
   },
@@ -435,10 +441,10 @@ const styles = StyleSheet.create({
   dividerLine: {
     flex: 1,
     height: 1,
-    backgroundColor: '#1A2744',
+    backgroundColor: colors.card,
   },
   dividerText: {
-    color: '#C9A84C50',
+    color: colors.primary + '50',
     marginHorizontal: 16,
     fontSize: 12,
   },
@@ -447,11 +453,11 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   linkText: {
-    color: '#8A9AB5',
+    color: colors.textSecondary,
     fontSize: 15,
   },
   linkTextHighlight: {
-    color: '#C9A84C',
+    color: colors.primary,
     fontWeight: '600',
   },
   bottomAccent: {

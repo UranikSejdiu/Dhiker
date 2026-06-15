@@ -11,11 +11,15 @@ import {
   Pressable,
   TextInput,
   FlatList,
+  ScrollView,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useDhikr } from '../../context/DhikrContext';
 import { useAuth } from '../../context/AuthContext';
-import { theme } from '../../utils/theme';
+import { useAppTheme } from '../../context/ThemeContext';
+import { useLanguage } from '../../context/LanguageContext';
+import { ThemeColors, predefinedThemes, ThemeName } from '../../utils/theme';
+import { LanguageCode } from '../../i18n/translations';
 import * as Haptics from 'expo-haptics';
 import Fireworks from '../../components/Fireworks';
 
@@ -27,6 +31,11 @@ export default function CounterScreen() {
     resetDaily, addDhikr, deleteDhikr, updateDhikr,
   } = useDhikr();
   const { user, logout } = useAuth();
+  
+  // Customization hooks
+  const { colors, themeName, setTheme } = useAppTheme();
+  const { t, language, setLanguage } = useLanguage();
+  const styles = getStyles(colors);
 
   // ─── Counter State ───────────────────────────────
   const [mode, setMode] = useState<'increment' | 'decrement'>('increment');
@@ -116,7 +125,7 @@ export default function CounterScreen() {
     clearWarning();
     if (Platform.OS !== 'web') Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
     if (Platform.OS === 'web' && window.confirm) {
-      if (window.confirm('Reset this dhikr to 0?')) await resetDaily(selectedDhikr.id);
+      if (window.confirm(t('resetDhikrConfirm'))) await resetDaily(selectedDhikr.id);
     } else {
       await resetDaily(selectedDhikr.id);
     }
@@ -143,12 +152,12 @@ export default function CounterScreen() {
   const handleSaveDhikr = async () => {
     setModalError('');
     if (!newDhikrName.trim()) {
-      setModalError('Please enter a name');
+      setModalError(t('errorNoName'));
       return;
     }
     const limit = newDhikrLimit ? parseInt(newDhikrLimit, 10) : null;
     if (limit !== null && (isNaN(limit) || limit <= 0)) {
-      setModalError('Limit must be a positive number');
+      setModalError(t('errorLimitPositive'));
       return;
     }
     try {
@@ -171,7 +180,7 @@ export default function CounterScreen() {
 
   const handleDeleteDhikr = (id: string, name: string) => {
     if (Platform.OS === 'web' && typeof window !== 'undefined') {
-      if (window.confirm(`Delete "${name}"? All counts will be lost.`)) deleteDhikr(id);
+      if (window.confirm(t('deleteConfirmBody', { name }))) deleteDhikr(id);
     } else {
       deleteDhikr(id);
     }
@@ -181,7 +190,7 @@ export default function CounterScreen() {
 
   const handleLogout = async () => {
     if (Platform.OS === 'web' && typeof window !== 'undefined') {
-      if (window.confirm('Are you sure you want to sign out?')) {
+      if (window.confirm(t('signOutConfirm'))) {
         try { await logout(); } catch (e: any) { alert(e.message); }
       }
     } else {
@@ -220,7 +229,7 @@ export default function CounterScreen() {
               {selectedDhikr.dailyCount}
             </Animated.Text>
             <Animated.View style={[styles.warningContainer, { opacity: warningFadeAnim }]}>
-              <Text style={styles.warningText}>Change daily limit if you want to do more dhikr</Text>
+              <Text style={styles.warningText}>{t('changeLimitWarning')}</Text>
             </Animated.View>
           </TouchableOpacity>
         </>
@@ -228,10 +237,10 @@ export default function CounterScreen() {
         /* Empty State */
         <View style={styles.emptyStateContainer}>
           <Text style={styles.emptyStateIcon}>☪</Text>
-          <Text style={styles.emptyStateTitle}>No Dhikrs Yet</Text>
-          <Text style={styles.emptyStateSubtitle}>Add your first dhikr to start counting</Text>
+          <Text style={styles.emptyStateTitle}>{t('noDhikrsYet')}</Text>
+          <Text style={styles.emptyStateSubtitle}>{t('addFirstDhikr')}</Text>
           <TouchableOpacity style={styles.emptyStateButton} onPress={openCreateModal}>
-            <Text style={styles.emptyStateButtonText}>+ Add Dhikr</Text>
+            <Text style={styles.emptyStateButtonText}>{t('addDhikrBtn')}</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -270,9 +279,9 @@ export default function CounterScreen() {
 
             {/* Header */}
             <View style={styles.panelHeader}>
-              <Text style={styles.panelTitle}>My Dhikrs</Text>
+              <Text style={styles.panelTitle}>{t('myDhikrs')}</Text>
               <TouchableOpacity style={styles.panelAddBtn} onPress={openCreateModal}>
-                <Text style={styles.panelAddBtnText}>+ New</Text>
+                <Text style={styles.panelAddBtnText}>{t('newBtn')}</Text>
               </TouchableOpacity>
             </View>
 
@@ -304,17 +313,17 @@ export default function CounterScreen() {
                         style={styles.dhikrCardActionBtn}
                         onPress={() => handleDeleteDhikr(item.id, item.name)}
                       >
-                        <Text style={[styles.dhikrCardActionIcon, { color: '#E74C3C' }]}>✕</Text>
+                        <Text style={[styles.dhikrCardActionIcon, { color: colors.error }]}>✕</Text>
                       </TouchableOpacity>
                     </View>
                   </View>
 
                   <View style={styles.dhikrCardCounts}>
                     <Text style={styles.dhikrCardDaily}>
-                      Today: {item.dailyCount}
+                      {t('todayLabel')} {item.dailyCount}
                       {item.dailyLimit ? ` / ${item.dailyLimit}` : ''}
                     </Text>
-                    <Text style={styles.dhikrCardTotal}>Total: {item.totalCount}</Text>
+                    <Text style={styles.dhikrCardTotal}>{t('totalLabel')} {item.totalCount}</Text>
                   </View>
 
                   {item.dailyLimit ? (
@@ -323,8 +332,8 @@ export default function CounterScreen() {
                         <LinearGradient
                           colors={
                             item.dailyCount >= item.dailyLimit
-                              ? ['#2BA06D', '#1A7A52']
-                              : ['#C9A84C', '#9B7E2E']
+                              ? colors.gradientSecondary
+                              : colors.gradientPrimary
                           }
                           style={[
                             styles.progressBarFill,
@@ -341,8 +350,8 @@ export default function CounterScreen() {
               ListEmptyComponent={
                 <View style={styles.panelEmpty}>
                   <Text style={styles.panelEmptyIcon}>☰</Text>
-                  <Text style={styles.panelEmptyText}>No dhikrs added yet</Text>
-                  <Text style={styles.panelEmptySubtext}>Tap '+ New' to create one</Text>
+                  <Text style={styles.panelEmptyText}>{t('noDhikrsAdded')}</Text>
+                  <Text style={styles.panelEmptySubtext}>{t('tapNewToCreate')}</Text>
                 </View>
               }
             />
@@ -366,18 +375,20 @@ export default function CounterScreen() {
 
             {/* Header */}
             <View style={styles.panelHeader}>
-              <Text style={styles.panelTitle}>Settings</Text>
+              <Text style={styles.panelTitle}>{t('settings')}</Text>
               <TouchableOpacity onPress={() => setShowSettingsPanel(false)}>
                 <Text style={styles.panelCloseIcon}>✕</Text>
               </TouchableOpacity>
             </View>
 
             {/* Settings Content */}
-            <View style={styles.settingsBody}>
-              <Text style={styles.settingsSectionLabel}>ACCOUNT</Text>
+            <ScrollView style={styles.settingsBody} showsVerticalScrollIndicator={false}>
+              
+              {/* Account */}
+              <Text style={styles.settingsSectionLabel}>{t('accountSection')}</Text>
               <View style={styles.settingsCard}>
                 <View style={styles.settingsRow}>
-                  <Text style={styles.settingsRowLabel}>Display Name</Text>
+                  <Text style={styles.settingsRowLabel}>{t('displayName')}</Text>
                   <Text style={styles.settingsRowValue} numberOfLines={1}>
                     {user?.user_metadata?.display_name || user?.user_metadata?.full_name || 'User'}
                   </Text>
@@ -389,18 +400,63 @@ export default function CounterScreen() {
                 </View>
               </View>
 
-              <Text style={[styles.settingsSectionLabel, { marginTop: 24 }]}>ABOUT</Text>
+              {/* Theme / Appearance */}
+              <Text style={[styles.settingsSectionLabel, { marginTop: 24 }]}>{t('appearanceSection')}</Text>
               <View style={styles.settingsCard}>
                 <View style={styles.settingsRow}>
-                  <Text style={styles.settingsRowLabel}>Version</Text>
+                  <Text style={styles.settingsRowLabel}>Theme</Text>
+                  <View style={styles.swatchContainer}>
+                    {Object.keys(predefinedThemes).map((tName) => {
+                      const tColors = predefinedThemes[tName as ThemeName];
+                      return (
+                        <TouchableOpacity
+                          key={tName}
+                          onPress={() => setTheme(tName as ThemeName)}
+                          style={[
+                            styles.swatch,
+                            { backgroundColor: tColors.background },
+                            themeName === tName && styles.swatchSelected
+                          ]}
+                        >
+                          <View style={[styles.swatchInner, { backgroundColor: tColors.primary }]} />
+                        </TouchableOpacity>
+                      )
+                    })}
+                  </View>
+                </View>
+              </View>
+
+              {/* Language */}
+              <Text style={[styles.settingsSectionLabel, { marginTop: 24 }]}>{t('languageSection')}</Text>
+              <View style={styles.settingsCard}>
+                {(['en', 'de', 'fr', 'sq'] as LanguageCode[]).map((lang, idx) => (
+                  <View key={lang}>
+                    <TouchableOpacity style={styles.settingsRow} onPress={() => setLanguage(lang)}>
+                      <Text style={styles.settingsRowLabel}>{lang.toUpperCase()}</Text>
+                      <Text style={styles.settingsRowValue}>
+                        {language === lang ? '✓' : ''}
+                      </Text>
+                    </TouchableOpacity>
+                    {idx < 3 && <View style={styles.settingsDivider} />}
+                  </View>
+                ))}
+              </View>
+
+              {/* About */}
+              <Text style={[styles.settingsSectionLabel, { marginTop: 24 }]}>{t('aboutSection')}</Text>
+              <View style={styles.settingsCard}>
+                <View style={styles.settingsRow}>
+                  <Text style={styles.settingsRowLabel}>{t('version')}</Text>
                   <Text style={styles.settingsRowValue}>1.0.0</Text>
                 </View>
               </View>
 
               <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-                <Text style={styles.logoutButtonText}>Sign Out</Text>
+                <Text style={styles.logoutButtonText}>{t('signOut')}</Text>
               </TouchableOpacity>
-            </View>
+              
+              <View style={{ height: 40 }} />
+            </ScrollView>
           </Pressable>
         </Pressable>
       </Modal>
@@ -415,28 +471,28 @@ export default function CounterScreen() {
         <Pressable style={styles.formOverlay} onPress={() => setDhikrModalVisible(false)}>
           <Pressable style={styles.formContent} onPress={e => e.stopPropagation()}>
             <Text style={styles.formTitle}>
-              {editingId ? 'Edit Dhikr' : 'New Dhikr'}
+              {editingId ? t('editDhikr') : t('newDhikr')}
             </Text>
 
             {modalError ? (
               <Text style={styles.formError}>{modalError}</Text>
             ) : null}
 
-            <Text style={styles.formLabel}>Name</Text>
+            <Text style={styles.formLabel}>{t('nameLabel')}</Text>
             <TextInput
               style={styles.formInput}
-              placeholder="Dhikr Name (e.g. SubhanAllah)"
-              placeholderTextColor="#4A5568"
+              placeholder={t('namePlaceholder')}
+              placeholderTextColor={colors.textSecondary}
               value={newDhikrName}
               onChangeText={setNewDhikrName}
               autoFocus
             />
 
-            <Text style={styles.formLabel}>Daily Limit (Optional)</Text>
+            <Text style={styles.formLabel}>{t('limitLabel')}</Text>
             <TextInput
               style={styles.formInput}
-              placeholder="e.g. 100"
-              placeholderTextColor="#4A5568"
+              placeholder={t('limitPlaceholder')}
+              placeholderTextColor={colors.textSecondary}
               value={newDhikrLimit}
               onChangeText={setNewDhikrLimit}
               keyboardType="number-pad"
@@ -447,16 +503,16 @@ export default function CounterScreen() {
                 style={styles.formCancelBtn}
                 onPress={() => setDhikrModalVisible(false)}
               >
-                <Text style={styles.formCancelText}>Cancel</Text>
+                <Text style={styles.formCancelText}>{t('cancel')}</Text>
               </TouchableOpacity>
               <TouchableOpacity onPress={handleSaveDhikr}>
                 <LinearGradient
-                  colors={theme.colors.gradientGold}
+                  colors={colors.gradientPrimary}
                   style={styles.formSaveBtn}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 1 }}
                 >
-                  <Text style={styles.formSaveText}>Save</Text>
+                  <Text style={styles.formSaveText}>{t('saveBtn')}</Text>
                 </LinearGradient>
               </TouchableOpacity>
             </View>
@@ -469,11 +525,11 @@ export default function CounterScreen() {
 
 // ─── Styles ──────────────────────────────────────────
 
-const styles = StyleSheet.create({
+const getStyles = (colors: ThemeColors) => StyleSheet.create({
   // Main container
   container: {
     flex: 1,
-    backgroundColor: '#000000',
+    backgroundColor: colors.background,
   },
 
   // ─── Top Navigation ───
@@ -489,7 +545,7 @@ const styles = StyleSheet.create({
     padding: 10,
   },
   navIcon: {
-    color: '#555',
+    color: colors.textSecondary,
     fontSize: 50,
     fontWeight: '300',
     lineHeight: 50,
@@ -502,7 +558,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
   },
   dhikrName: {
-    color: '#2ECC71',
+    color: colors.success,
     fontSize: 22,
     fontWeight: '600',
     textAlign: 'center',
@@ -517,7 +573,7 @@ const styles = StyleSheet.create({
     touchAction: 'none',
   } as any,
   massiveNumber: {
-    color: '#888',
+    color: colors.textSecondary,
     fontSize: 160,
     fontWeight: '200',
     letterSpacing: -5,
@@ -525,15 +581,15 @@ const styles = StyleSheet.create({
   warningContainer: {
     position: 'absolute',
     bottom: 40,
-    backgroundColor: 'rgba(231, 76, 60, 0.1)',
+    backgroundColor: colors.error + '1A',
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: 'rgba(231, 76, 60, 0.3)',
+    borderColor: colors.error + '4D',
   },
   warningText: {
-    color: '#E74C3C',
+    color: colors.error,
     fontSize: 14,
     fontWeight: '500',
     textAlign: 'center',
@@ -548,32 +604,32 @@ const styles = StyleSheet.create({
   },
   emptyStateIcon: {
     fontSize: 56,
-    color: '#C9A84C',
+    color: colors.primary,
     marginBottom: 16,
     opacity: 0.6,
   },
   emptyStateTitle: {
-    color: '#F5F0E8',
+    color: colors.text,
     fontSize: 24,
     fontWeight: '600',
     marginBottom: 8,
   },
   emptyStateSubtitle: {
-    color: '#8A94A6',
+    color: colors.textSecondary,
     fontSize: 15,
     marginBottom: 32,
     textAlign: 'center',
   },
   emptyStateButton: {
-    backgroundColor: '#0F1A2E',
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: '#C9A84C40',
+    borderColor: colors.primary + '40',
     borderRadius: 14,
     paddingHorizontal: 28,
     paddingVertical: 14,
   },
   emptyStateButtonText: {
-    color: '#C9A84C',
+    color: colors.primary,
     fontSize: 16,
     fontWeight: '600',
   },
@@ -590,33 +646,38 @@ const styles = StyleSheet.create({
     height: 56,
     borderRadius: 28,
     borderWidth: 1.5,
-    borderColor: '#333',
+    borderColor: colors.border,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: 'transparent',
   },
   toolIcon: {
-    color: '#888',
-    fontSize: 26,
+    color: colors.textSecondary,
+    fontSize: 28,
     fontWeight: '300',
+    textAlign: 'center',
+    // These specific adjustments ensure mathematical vertical centering of + and - glyphs
+    includeFontPadding: false,
+    textAlignVertical: 'center',
+    marginTop: Platform.OS === 'ios' ? -2 : 0, 
   },
   toolIconActive: {
-    color: '#E74C3C',
+    color: colors.error,
   },
 
   // ─── Shared Panel Styles (Bottom Sheet) ───
   panelOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    backgroundColor: colors.overlay,
     justifyContent: 'flex-end',
   },
   panelContent: {
-    backgroundColor: '#0F1A2E',
+    backgroundColor: colors.surface,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    maxHeight: SCREEN_HEIGHT * 0.75,
+    maxHeight: SCREEN_HEIGHT * 0.85,
     borderTopWidth: 1,
-    borderColor: 'rgba(201, 168, 76, 0.15)',
+    borderColor: colors.border,
   },
   panelHandleRow: {
     alignItems: 'center',
@@ -626,7 +687,7 @@ const styles = StyleSheet.create({
   panelHandle: {
     width: 40,
     height: 4,
-    backgroundColor: '#333',
+    backgroundColor: colors.textSecondary + '80',
     borderRadius: 2,
   },
   panelHeader: {
@@ -636,29 +697,29 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.05)',
+    borderBottomColor: colors.border,
   },
   panelTitle: {
-    color: '#F5F0E8',
+    color: colors.text,
     fontSize: 22,
     fontWeight: '700',
   },
   panelCloseIcon: {
-    color: '#8A94A6',
+    color: colors.textSecondary,
     fontSize: 20,
     fontWeight: '400',
     padding: 4,
   },
   panelAddBtn: {
-    backgroundColor: '#162240',
+    backgroundColor: colors.surfaceLight,
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: 'rgba(201, 168, 76, 0.15)',
+    borderColor: colors.border,
   },
   panelAddBtnText: {
-    color: '#C9A84C',
+    color: colors.primary,
     fontWeight: '600',
     fontSize: 14,
   },
@@ -670,15 +731,15 @@ const styles = StyleSheet.create({
 
   // ─── Dhikr Card (inside panel) ───
   dhikrCard: {
-    backgroundColor: '#162240',
+    backgroundColor: colors.surfaceLight,
     borderRadius: 14,
     padding: 16,
     borderWidth: 1,
-    borderColor: '#1E2D50',
+    borderColor: colors.card,
   },
   dhikrCardSelected: {
-    borderColor: '#C9A84C60',
-    backgroundColor: '#1A2B4A',
+    borderColor: colors.primary + '60',
+    backgroundColor: colors.surfaceLight,
   },
   dhikrCardHeader: {
     flexDirection: 'row',
@@ -687,7 +748,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   dhikrCardTitle: {
-    color: '#F5F0E8',
+    color: colors.text,
     fontSize: 18,
     fontWeight: '600',
     flex: 1,
@@ -701,7 +762,7 @@ const styles = StyleSheet.create({
     padding: 6,
   },
   dhikrCardActionIcon: {
-    color: '#8A94A6',
+    color: colors.textSecondary,
     fontSize: 18,
   },
   dhikrCardCounts: {
@@ -710,12 +771,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   dhikrCardDaily: {
-    color: '#C9A84C',
+    color: colors.primary,
     fontSize: 14,
     fontWeight: '600',
   },
   dhikrCardTotal: {
-    color: '#4A5568',
+    color: colors.textMuted,
     fontSize: 12,
   },
 
@@ -725,7 +786,7 @@ const styles = StyleSheet.create({
   },
   progressBarTrack: {
     height: 4,
-    backgroundColor: '#1E2D50',
+    backgroundColor: colors.card,
     borderRadius: 2,
     overflow: 'hidden',
   },
@@ -742,18 +803,18 @@ const styles = StyleSheet.create({
   },
   panelEmptyIcon: {
     fontSize: 40,
-    color: '#4A5568',
+    color: colors.textMuted,
     marginBottom: 12,
     opacity: 0.5,
   },
   panelEmptyText: {
-    color: '#8A94A6',
+    color: colors.textSecondary,
     fontSize: 16,
     fontWeight: '600',
     marginBottom: 4,
   },
   panelEmptySubtext: {
-    color: '#4A5568',
+    color: colors.textMuted,
     fontSize: 13,
   },
 
@@ -762,49 +823,73 @@ const styles = StyleSheet.create({
     padding: 24,
   },
   settingsSectionLabel: {
-    color: '#8A94A6',
+    color: colors.textSecondary,
     fontSize: 12,
     fontWeight: '600',
     letterSpacing: 1,
     marginBottom: 8,
+    marginLeft: 4,
   },
   settingsCard: {
-    backgroundColor: '#162240',
+    backgroundColor: colors.surfaceLight,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: '#1E2D50',
+    borderColor: colors.card,
+    overflow: 'hidden',
   },
   settingsRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'center',
     padding: 16,
   },
   settingsRowLabel: {
-    color: '#F5F0E8',
+    color: colors.text,
     fontSize: 15,
   },
   settingsRowValue: {
-    color: '#8A94A6',
+    color: colors.textSecondary,
     fontSize: 15,
     maxWidth: '55%',
     textAlign: 'right',
   },
   settingsDivider: {
     height: 1,
-    backgroundColor: '#1E2D50',
+    backgroundColor: colors.card,
     marginLeft: 16,
   },
+  swatchContainer: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  swatch: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    borderWidth: 2,
+    borderColor: 'transparent',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  swatchSelected: {
+    borderColor: colors.primary,
+  },
+  swatchInner: {
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+  },
   logoutButton: {
-    backgroundColor: 'rgba(231, 76, 60, 0.1)',
+    backgroundColor: colors.error + '1A',
     padding: 16,
     borderRadius: 14,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(231, 76, 60, 0.3)',
+    borderColor: colors.error + '4D',
     marginTop: 32,
   },
   logoutButtonText: {
-    color: '#E74C3C',
+    color: colors.error,
     fontSize: 16,
     fontWeight: '600',
   },
@@ -812,33 +897,33 @@ const styles = StyleSheet.create({
   // ─── Add/Edit Dhikr Form Modal ───
   formOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    backgroundColor: colors.overlay,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 24,
   },
   formContent: {
-    backgroundColor: '#0F1A2E',
+    backgroundColor: colors.surface,
     borderRadius: 20,
     padding: 28,
     width: '100%',
     maxWidth: 420,
     borderWidth: 1,
-    borderColor: '#1E2D50',
+    borderColor: colors.card,
   },
   formTitle: {
-    color: '#F5F0E8',
+    color: colors.text,
     fontSize: 22,
     fontWeight: '700',
     marginBottom: 20,
   },
   formError: {
-    color: '#E74C3C',
+    color: colors.error,
     marginBottom: 16,
     fontSize: 14,
   },
   formLabel: {
-    color: '#8A94A6',
+    color: colors.textSecondary,
     fontSize: 12,
     fontWeight: '600',
     letterSpacing: 0.5,
@@ -846,12 +931,12 @@ const styles = StyleSheet.create({
     marginLeft: 4,
   },
   formInput: {
-    backgroundColor: '#060D1B',
+    backgroundColor: colors.background,
     borderWidth: 1,
-    borderColor: '#1E2D50',
+    borderColor: colors.card,
     borderRadius: 12,
     padding: 14,
-    color: '#F5F0E8',
+    color: colors.text,
     fontSize: 16,
     marginBottom: 16,
   },
@@ -867,7 +952,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   formCancelText: {
-    color: '#8A94A6',
+    color: colors.textSecondary,
     fontWeight: '600',
     fontSize: 15,
   },
@@ -877,7 +962,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   formSaveText: {
-    color: '#060D1B',
+    color: colors.background,
     fontWeight: '700',
     fontSize: 15,
   },

@@ -7,6 +7,26 @@ import { AuthProvider } from '../context/AuthContext';
 import { DhikrProvider } from '../context/DhikrContext';
 import InstallPrompt from '../components/InstallPrompt';
 
+import { AppThemeProvider, useAppTheme } from '../context/ThemeContext';
+import { LanguageProvider } from '../context/LanguageContext';
+
+function RootContent() {
+  const { colors, themeName } = useAppTheme();
+  return (
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
+      <StatusBar style={themeName === 'pure-light' ? 'dark' : 'light'} />
+      <Stack
+        screenOptions={{
+          headerShown: false,
+          contentStyle: { backgroundColor: colors.background },
+          animation: 'fade',
+        }}
+      />
+      <InstallPrompt />
+    </View>
+  );
+}
+
 export default function RootLayout() {
   // Register the Service Worker for PWA offline support
   useEffect(() => {
@@ -18,29 +38,23 @@ export default function RootLayout() {
   }, []);
 
   return (
-    <AuthProvider>
-      <DhikrProvider>
-        <Head>
-          <meta name="apple-mobile-web-app-capable" content="yes" />
-          <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-          <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-          <link rel="manifest" href="/manifest.json" />
-          <link rel="icon" href="/favicon.ico" />
-          <link rel="apple-touch-icon" href="/icon-192.png" />
-        </Head>
-        <StatusBar style="light" />
-        <View style={{ flex: 1 }}>
-          <Stack
-            screenOptions={{
-              headerShown: false,
-              contentStyle: { backgroundColor: '#060D1B' },
-              animation: 'fade',
-            }}
-          />
-          <InstallPrompt />
-        </View>
-      </DhikrProvider>
-    </AuthProvider>
+    <LanguageProvider>
+      <AppThemeProvider>
+        <AuthProvider>
+          <DhikrProvider>
+            <Head>
+              <meta name="apple-mobile-web-app-capable" content="yes" />
+              <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+              <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+              <link rel="manifest" href="/manifest.json" />
+              <link rel="icon" href="/favicon.ico" />
+              <link rel="apple-touch-icon" href="/icon-192.png" />
+            </Head>
+            <RootContent />
+          </DhikrProvider>
+        </AuthProvider>
+      </AppThemeProvider>
+    </LanguageProvider>
   );
 }
 

@@ -1,5 +1,8 @@
 import React, { useEffect, useRef } from 'react';
 import { Animated, Dimensions, StyleSheet, View, Text } from 'react-native';
+import { useLanguage } from '../context/LanguageContext';
+import { useAppTheme } from '../context/ThemeContext';
+import { ThemeColors } from '../utils/theme';
 
 const { width, height } = Dimensions.get('window');
 
@@ -9,6 +12,9 @@ const EMOJIS = ['🎉', '✨', '🌟', '💫', '🎊', '💚', '🤲', '☪️',
 export default function Fireworks({ onComplete }: { onComplete: () => void }) {
   const animations = useRef([...Array(PARTICLES)].map(() => new Animated.Value(0))).current;
   const bannerAnim = useRef(new Animated.Value(0)).current;
+  const { t } = useLanguage();
+  const { colors } = useAppTheme();
+  const styles = getStyles(colors);
 
   useEffect(() => {
     // Stagger particle launches for a more natural burst feel
@@ -125,14 +131,14 @@ export default function Fireworks({ onComplete }: { onComplete: () => void }) {
         ]}
       >
         <Text style={styles.bannerEmoji}>🤲</Text>
-        <Text style={styles.bannerTitle}>ما شاء الله</Text>
-        <Text style={styles.bannerSubtitle}>Daily Goal Complete!</Text>
+        <Text style={styles.bannerTitle}>{t('goalCompleteTitle')}</Text>
+        <Text style={styles.bannerSubtitle}>{t('goalCompleteSubtitle')}</Text>
       </Animated.View>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     ...StyleSheet.absoluteFillObject,
     zIndex: 999,
@@ -144,16 +150,18 @@ const styles = StyleSheet.create({
     fontSize: 30,
     top: 0,
     left: 0,
+    marginLeft: -15, // Offset half width so origin is mathematical center
+    marginTop: -15,  // Offset half height
   },
   bannerContainer: {
-    backgroundColor: 'rgba(26, 122, 82, 0.9)',
+    backgroundColor: colors.secondary + 'E6', // 90% opacity
     paddingHorizontal: 32,
     paddingVertical: 24,
     borderRadius: 20,
     alignItems: 'center',
     borderWidth: 2,
-    borderColor: 'rgba(201, 168, 76, 0.6)',
-    shadowColor: '#C9A84C',
+    borderColor: colors.primary + '99',
+    shadowColor: colors.primary,
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.5,
     shadowRadius: 20,
@@ -166,13 +174,13 @@ const styles = StyleSheet.create({
   bannerTitle: {
     fontSize: 32,
     fontWeight: '700',
-    color: '#E8D48B',
+    color: colors.primaryLight,
     marginBottom: 4,
   },
   bannerSubtitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#F5F0E8',
+    color: colors.text,
     opacity: 0.9,
   },
 });

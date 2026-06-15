@@ -14,6 +14,9 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../../context/AuthContext';
+import { useAppTheme } from '../../context/ThemeContext';
+import { useLanguage } from '../../context/LanguageContext';
+import { ThemeColors } from '../../utils/theme';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
@@ -24,7 +27,11 @@ export default function LoginScreen() {
   const [passwordFocused, setPasswordFocused] = useState(false);
 
   const { login, loginWithGoogle, user } = useAuth();
+  const { colors } = useAppTheme();
+  const { t } = useLanguage();
   const router = useRouter();
+
+  const styles = getStyles(colors);
 
   // Redirect to counter when user becomes authenticated (e.g. after Google OAuth callback)
   useEffect(() => {
@@ -61,7 +68,7 @@ export default function LoginScreen() {
 
   const handleLogin = async () => {
     if (!email.trim() || !password.trim()) {
-      setError('Please fill in all fields');
+      setError(t('fillAllFields'));
       return;
     }
 
@@ -92,7 +99,7 @@ export default function LoginScreen() {
         {/* Decorative top accent */}
         <View style={styles.topAccent}>
           <LinearGradient
-            colors={['#C9A84C', '#D4B96A', '#C9A84C']}
+            colors={colors.gradientPrimary}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
             style={styles.accentLine}
@@ -112,9 +119,9 @@ export default function LoginScreen() {
           <View style={styles.iconContainer}>
             <Text style={styles.crescentIcon}>☪</Text>
           </View>
-          <Text style={styles.appTitle}>Dhikr Counter</Text>
+          <Text style={styles.appTitle}>{t('appTitle')}</Text>
           <Text style={styles.bismillah}>بِسْمِ اللهِ</Text>
-          <Text style={styles.subtitle}>Remember Allah, find peace</Text>
+          <Text style={styles.subtitle}>{t('subtitle')}</Text>
         </Animated.View>
 
         {/* Form */}
@@ -136,14 +143,14 @@ export default function LoginScreen() {
 
           {/* Email Input */}
           <View style={styles.inputWrapper}>
-            <Text style={styles.inputLabel}>Email</Text>
+            <Text style={styles.inputLabel}>{t('emailLabel')}</Text>
             <TextInput
               style={[
                 styles.input,
                 emailFocused && styles.inputFocused,
               ]}
-              placeholder="Enter your email"
-              placeholderTextColor="#5A6478"
+              placeholder={t('emailLabel')}
+              placeholderTextColor={colors.textSecondary}
               value={email}
               onChangeText={setEmail}
               onFocus={() => setEmailFocused(true)}
@@ -157,14 +164,14 @@ export default function LoginScreen() {
 
           {/* Password Input */}
           <View style={styles.inputWrapper}>
-            <Text style={styles.inputLabel}>Password</Text>
+            <Text style={styles.inputLabel}>{t('passwordLabel')}</Text>
             <TextInput
               style={[
                 styles.input,
                 passwordFocused && styles.inputFocused,
               ]}
-              placeholder="Enter your password"
-              placeholderTextColor="#5A6478"
+              placeholder={t('passwordLabel')}
+              placeholderTextColor={colors.textSecondary}
               value={password}
               onChangeText={setPassword}
               onFocus={() => setPasswordFocused(true)}
@@ -183,15 +190,15 @@ export default function LoginScreen() {
             style={styles.buttonWrapper}
           >
             <LinearGradient
-              colors={['#C9A84C', '#B8963F', '#A6852F']}
+              colors={colors.gradientPrimary}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
               style={styles.signInButton}
             >
               {isLoading ? (
-                <ActivityIndicator size="small" color="#060D1B" />
+                <ActivityIndicator size="small" color={colors.background} />
               ) : (
-                <Text style={styles.signInButtonText}>Sign In</Text>
+                <Text style={styles.signInButtonText}>{t('signInBtn')}</Text>
               )}
             </LinearGradient>
           </TouchableOpacity>
@@ -213,7 +220,7 @@ export default function LoginScreen() {
           >
             <View style={styles.googleButton}>
               <Text style={styles.googleButtonIcon}>G</Text>
-              <Text style={styles.googleButtonText}>Continue with Google</Text>
+              <Text style={styles.googleButtonText}>{t('continueGoogle')}</Text>
             </View>
           </TouchableOpacity>
 
@@ -231,8 +238,8 @@ export default function LoginScreen() {
             style={styles.linkContainer}
           >
             <Text style={styles.linkText}>
-              Don't have an account?{' '}
-              <Text style={styles.linkTextHighlight}>Sign Up</Text>
+              {t('noAccount')}{' '}
+              <Text style={styles.linkTextHighlight}>{t('signUpBtn')}</Text>
             </Text>
           </TouchableOpacity>
         </Animated.View>
@@ -240,7 +247,7 @@ export default function LoginScreen() {
         {/* Bottom decorative accent */}
         <View style={styles.bottomAccent}>
           <LinearGradient
-            colors={['transparent', '#C9A84C20', 'transparent']}
+            colors={['transparent', colors.primary + '20', 'transparent']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
             style={styles.bottomAccentLine}
@@ -251,10 +258,10 @@ export default function LoginScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#060D1B',
+    backgroundColor: colors.background,
   },
   scrollContent: {
     flexGrow: 1,
@@ -279,13 +286,13 @@ const styles = StyleSheet.create({
     width: 90,
     height: 90,
     borderRadius: 45,
-    backgroundColor: '#0D1A2D',
+    backgroundColor: colors.surface,
     borderWidth: 2,
-    borderColor: '#C9A84C40',
+    borderColor: colors.border,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 16,
-    shadowColor: '#C9A84C',
+    shadowColor: colors.primary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 12,
@@ -293,39 +300,39 @@ const styles = StyleSheet.create({
   },
   crescentIcon: {
     fontSize: 42,
-    color: '#C9A84C',
+    color: colors.primary,
   },
   appTitle: {
     fontSize: 32,
     fontWeight: '700',
-    color: '#F5F0E8',
+    color: colors.text,
     letterSpacing: 1,
     marginBottom: 8,
   },
   bismillah: {
     fontSize: 22,
-    color: '#C9A84C',
+    color: colors.primary,
     marginBottom: 6,
     fontWeight: '300',
   },
   subtitle: {
     fontSize: 14,
-    color: '#8A9AB5',
+    color: colors.textSecondary,
     letterSpacing: 0.5,
   },
   formContainer: {
     width: '100%',
   },
   errorContainer: {
-    backgroundColor: '#2D1015',
+    backgroundColor: colors.error + '20',
     borderWidth: 1,
-    borderColor: '#E5484D40',
+    borderColor: colors.error + '40',
     borderRadius: 12,
     padding: 14,
     marginBottom: 20,
   },
   errorText: {
-    color: '#F5706C',
+    color: colors.error,
     fontSize: 14,
     textAlign: 'center',
     lineHeight: 20,
@@ -334,7 +341,7 @@ const styles = StyleSheet.create({
     marginBottom: 18,
   },
   inputLabel: {
-    color: '#C9A84C',
+    color: colors.primary,
     fontSize: 13,
     fontWeight: '600',
     marginBottom: 8,
@@ -342,19 +349,19 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
   input: {
-    backgroundColor: '#0D1A2D',
+    backgroundColor: colors.surface,
     borderWidth: 1.5,
-    borderColor: '#1A2744',
+    borderColor: colors.card,
     borderRadius: 14,
     paddingHorizontal: 18,
     paddingVertical: 16,
     fontSize: 16,
-    color: '#F5F0E8',
+    color: colors.text,
   },
   inputFocused: {
-    borderColor: '#C9A84C',
-    backgroundColor: '#0F1E35',
-    shadowColor: '#C9A84C',
+    borderColor: colors.primary,
+    backgroundColor: colors.surfaceLight,
+    shadowColor: colors.primary,
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.15,
     shadowRadius: 8,
@@ -369,14 +376,14 @@ const styles = StyleSheet.create({
     paddingVertical: 17,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#C9A84C',
+    shadowColor: colors.primary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.4,
     shadowRadius: 12,
     elevation: 6,
   },
   signInButtonText: {
-    color: '#060D1B',
+    color: colors.background,
     fontSize: 17,
     fontWeight: '700',
     letterSpacing: 0.8,
@@ -388,20 +395,20 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#0F1A2E',
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: '#1A2744',
+    borderColor: colors.card,
     borderRadius: 14,
     paddingVertical: 16,
   },
   googleButtonIcon: {
-    color: '#C9A84C',
+    color: colors.primary,
     fontSize: 20,
     fontWeight: '800',
     marginRight: 12,
   },
   googleButtonText: {
-    color: '#F5F0E8',
+    color: colors.text,
     fontSize: 16,
     fontWeight: '600',
   },
@@ -413,10 +420,10 @@ const styles = StyleSheet.create({
   dividerLine: {
     flex: 1,
     height: 1,
-    backgroundColor: '#1A2744',
+    backgroundColor: colors.card,
   },
   dividerText: {
-    color: '#C9A84C50',
+    color: colors.primary + '50',
     marginHorizontal: 16,
     fontSize: 12,
   },
@@ -425,11 +432,11 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   linkText: {
-    color: '#8A9AB5',
+    color: colors.textSecondary,
     fontSize: 15,
   },
   linkTextHighlight: {
-    color: '#C9A84C',
+    color: colors.primary,
     fontWeight: '600',
   },
   bottomAccent: {

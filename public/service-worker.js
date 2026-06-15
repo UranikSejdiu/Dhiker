@@ -32,9 +32,13 @@ self.addEventListener('fetch', (event) => {
   // Only handle GET requests
   if (event.request.method !== 'GET') return;
 
-  // Skip Firebase/external API requests — let them go straight to network
+  // Only handle http/https requests (ignore chrome-extension://, etc.)
+  if (!event.request.url.startsWith('http')) return;
+
+  // Skip external APIs (Supabase, Firebase, Google)
   const url = new URL(event.request.url);
   if (
+    url.hostname.includes('supabase') ||
     url.hostname.includes('firebase') ||
     url.hostname.includes('google') ||
     url.hostname.includes('googleapis')

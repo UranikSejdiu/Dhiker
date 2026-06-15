@@ -53,7 +53,6 @@ export default function CounterScreen() {
   const [mode, setMode] = useState<'increment' | 'decrement'>('increment');
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const warningFadeAnim = useRef(new Animated.Value(0)).current;
-  const decrementPulseAnim = useRef(new Animated.Value(1)).current;
   const [showFireworks, setShowFireworks] = useState(false);
   const [showLimitWarning, setShowLimitWarning] = useState(false);
   const [showSubtractionModal, setShowSubtractionModal] = useState(false);
@@ -92,20 +91,6 @@ export default function CounterScreen() {
       useNativeDriver: true,
     }).start();
   }, [showLimitWarning]);
-
-  useEffect(() => {
-    if (mode === 'decrement') {
-      Animated.loop(
-        Animated.sequence([
-          Animated.timing(decrementPulseAnim, { toValue: 0.4, duration: 600, useNativeDriver: true }),
-          Animated.timing(decrementPulseAnim, { toValue: 1, duration: 600, useNativeDriver: true }),
-        ])
-      ).start();
-    } else {
-      decrementPulseAnim.setValue(1);
-      decrementPulseAnim.stopAnimation();
-    }
-  }, [mode]);
 
   // Sync server preferences (theme/language) on login
   useEffect(() => {
@@ -291,14 +276,12 @@ export default function CounterScreen() {
 
       {/* ─── Bottom Toolbar ─── */}
       <View style={styles.bottomToolbar}>
-        <TouchableOpacity style={styles.toolButton} onPress={toggleMode}>
-          <Animated.Text style={[
-            styles.toolIcon, 
-            mode === 'decrement' && styles.toolIconActive,
-            { opacity: decrementPulseAnim }
-          ]}>
-            {mode === 'increment' ? '+' : '−'}
-          </Animated.Text>
+        <TouchableOpacity style={[styles.toolButton, mode === 'decrement' && { borderColor: colors.error + '80' }]} onPress={toggleMode}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}>
+            <Text style={[styles.toolIcon, mode === 'decrement' && { color: colors.error }]}>+</Text>
+            <Text style={[styles.toolSlash, mode === 'decrement' && { color: colors.error }]}>/</Text>
+            <Text style={[styles.toolIcon, mode === 'decrement' && { color: colors.error }]}>−</Text>
+          </View>
         </TouchableOpacity>
         <TouchableOpacity style={styles.toolButton} onPress={handleReset}>
           <Text style={styles.toolIcon}>↺</Text>
@@ -791,12 +774,18 @@ const getStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   toolIcon: {
     color: colors.textSecondary,
-    fontSize: 28,
-    fontWeight: '300',
+    fontSize: 22,
+    fontWeight: '400',
     textAlign: 'center',
     includeFontPadding: false,
     textAlignVertical: 'center',
     marginTop: Platform.OS === 'ios' ? -2 : 0, 
+  },
+  toolSlash: {
+    color: colors.textMuted,
+    fontSize: 14,
+    fontWeight: '300',
+    textAlign: 'center',
   },
   toolIconActive: {
     color: colors.error,

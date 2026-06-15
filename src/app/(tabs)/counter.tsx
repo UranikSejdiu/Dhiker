@@ -707,6 +707,7 @@ const getStyles = (colors: ThemeColors) => StyleSheet.create({
     alignItems: 'center',
     userSelect: 'none',
     touchAction: 'manipulation',
+    WebkitTapHighlightColor: 'transparent',
   } as any,
   massiveNumber: {
     color: colors.textSecondary,
@@ -786,6 +787,7 @@ const getStyles = (colors: ThemeColors) => StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: 'transparent',
+    WebkitTapHighlightColor: 'transparent',
   },
   toolIcon: {
     color: colors.textSecondary,

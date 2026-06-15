@@ -495,13 +495,13 @@ export function DhikrProvider({ children }: { children: ReactNode }) {
 
     setDhikrs(current => current.map(d => {
       if (d.id === id) {
-        return { ...d, dailyCount: 0, lastResetDate: getTodayDate() };
+        return { ...d, dailyCount: 0, totalCount: 0, lastResetDate: getTodayDate() };
       }
       return d;
     }));
 
     try {
-      await apiRequest('reset', 'POST', { id });
+      await apiRequest('reset', 'POST', { id, reset_total: true });
     } catch (err) {
       console.warn('Failed to reset daily count on server:', err);
       fetchDhikrs();

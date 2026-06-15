@@ -398,6 +398,7 @@ try {
             $user = authenticate($db, $input);
             $id = isset($input['id']) ? $input['id'] : '';
             $today = date('Y-m-d');
+            $resetTotal = !empty($input['reset_total']);
             
             if (empty($id)) {
                 http_response_code(400);
@@ -405,7 +406,11 @@ try {
                 break;
             }
             
-            $stmt = $db->prepare("UPDATE dhikrs SET daily_count = 0, last_reset_date = ? WHERE id = ? AND user_id = ?");
+            if ($resetTotal) {
+                $stmt = $db->prepare("UPDATE dhikrs SET daily_count = 0, total_count = 0, last_reset_date = ? WHERE id = ? AND user_id = ?");
+            } else {
+                $stmt = $db->prepare("UPDATE dhikrs SET daily_count = 0, last_reset_date = ? WHERE id = ? AND user_id = ?");
+            }
             $stmt->execute([$today, $id, $user['id']]);
             
             echo json_encode(['success' => true]);

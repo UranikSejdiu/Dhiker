@@ -426,7 +426,7 @@ export default function CounterScreen() {
                 <View style={styles.settingsRow}>
                   <Text style={styles.settingsRowLabel}>{t('displayName')}</Text>
                   <Text style={styles.settingsRowValue} numberOfLines={1}>
-                    {user?.user_metadata?.display_name || user?.user_metadata?.full_name || 'User'}
+                    {user?.display_name || user?.email || 'User'}
                   </Text>
                 </View>
                 <View style={styles.settingsDivider} />

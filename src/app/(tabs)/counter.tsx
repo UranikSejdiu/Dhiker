@@ -276,22 +276,36 @@ export default function CounterScreen() {
 
       {/* ─── Bottom Toolbar ─── */}
       <View style={styles.bottomToolbar}>
-        <TouchableOpacity style={[styles.toolButton, mode === 'decrement' && { borderColor: colors.error + '80' }]} onPress={toggleMode}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}>
-            <Text style={[styles.toolIcon, mode === 'decrement' && { color: colors.error }]}>+</Text>
-            <Text style={[styles.toolSlash, mode === 'decrement' && { color: colors.error }]}>/</Text>
-            <Text style={[styles.toolIcon, mode === 'decrement' && { color: colors.error }]}>−</Text>
-          </View>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.toolButton} onPress={handleReset}>
-          <Text style={styles.toolIcon}>↺</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.toolButton} onPress={() => setShowDhikrsPanel(true)}>
-          <Text style={styles.toolIcon}>☰</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.toolButton} onPress={() => setShowSettingsPanel(true)}>
-          <Text style={styles.toolIcon}>⚙</Text>
-        </TouchableOpacity>
+        <View style={styles.toolItem}>
+          <TouchableOpacity style={[styles.toolButton, mode === 'decrement' && { borderColor: colors.error + '80' }]} onPress={toggleMode}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}>
+              <Text style={[styles.toolIcon, mode === 'decrement' && { color: colors.error }]}>+</Text>
+              <Text style={[styles.toolSlash, mode === 'decrement' && { color: colors.error }]}>/</Text>
+              <Text style={[styles.toolIcon, mode === 'decrement' && { color: colors.error }]}>−</Text>
+            </View>
+          </TouchableOpacity>
+          <Text style={[styles.toolLabel, mode === 'decrement' && { color: colors.error }]}>
+            {mode === 'increment' ? t('addingMode') : t('subtractionLabel')}
+          </Text>
+        </View>
+        <View style={styles.toolItem}>
+          <TouchableOpacity style={styles.toolButton} onPress={handleReset}>
+            <Text style={styles.toolIcon}>↺</Text>
+          </TouchableOpacity>
+          <Text style={styles.toolLabel}>{t('resetLabel')}</Text>
+        </View>
+        <View style={styles.toolItem}>
+          <TouchableOpacity style={styles.toolButton} onPress={() => setShowDhikrsPanel(true)}>
+            <Text style={styles.toolIcon}>☰</Text>
+          </TouchableOpacity>
+          <Text style={styles.toolLabel}>{t('dhikrsLabel')}</Text>
+        </View>
+        <View style={styles.toolItem}>
+          <TouchableOpacity style={styles.toolButton} onPress={() => setShowSettingsPanel(true)}>
+            <Text style={styles.toolIcon}>⚙</Text>
+          </TouchableOpacity>
+          <Text style={styles.toolLabel}>{t('settingsLabel')}</Text>
+        </View>
       </View>
 
       {/* ─── Dhikrs Bottom Sheet Panel ─── */}
@@ -759,12 +773,16 @@ const getStyles = (colors: ThemeColors) => StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-evenly',
     paddingBottom: 28,
-    paddingTop: 12,
+    paddingTop: 8,
+  },
+  toolItem: {
+    alignItems: 'center',
+    gap: 4,
   },
   toolButton: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: 50,
+    height: 50,
+    borderRadius: 25,
     borderWidth: 1.5,
     borderColor: colors.border,
     alignItems: 'center',
@@ -774,7 +792,7 @@ const getStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   toolIcon: {
     color: colors.textSecondary,
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: '400',
     textAlign: 'center',
     includeFontPadding: false,
@@ -783,8 +801,14 @@ const getStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   toolSlash: {
     color: colors.textMuted,
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '300',
+    textAlign: 'center',
+  },
+  toolLabel: {
+    color: colors.textMuted,
+    fontSize: 10,
+    fontWeight: '500',
     textAlign: 'center',
   },
   toolIconActive: {

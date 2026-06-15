@@ -64,6 +64,13 @@ export const translations = {
     subtractionModeTitle: 'Subtraction Mode',
     subtractionModeMsg: 'You are now subtracting from your dhikr count. Be careful!',
     gotItBtn: 'Got it',
+    
+    // Toolbar
+    addingMode: 'Adding',
+    subtractionLabel: 'Subtract',
+    resetLabel: 'Reset',
+    dhikrsLabel: 'Dhikrs',
+    settingsLabel: 'Settings',
   },
   de: {
     appTitle: 'Dhikr Zähler',
@@ -123,6 +130,12 @@ export const translations = {
     subtractionModeTitle: 'Subtraktionsmodus',
     subtractionModeMsg: 'Sie ziehen jetzt von Ihrem Dhikr-Zähler ab. Seien Sie vorsichtig!',
     gotItBtn: 'Verstanden',
+    
+    addingMode: 'Hinzufügen',
+    subtractionLabel: 'Abziehen',
+    resetLabel: 'Zurücksetzen',
+    dhikrsLabel: 'Dhikrs',
+    settingsLabel: 'Einstellungen',
   },
   fr: {
     appTitle: 'Compteur Dhikr',
@@ -182,6 +195,12 @@ export const translations = {
     subtractionModeTitle: 'Mode Soustraction',
     subtractionModeMsg: 'Vous soustrayez maintenant de votre compte dhikr. Soyez prudent!',
     gotItBtn: 'Compris',
+    
+    addingMode: 'Ajouter',
+    subtractionLabel: 'Soustraire',
+    resetLabel: 'Réinitialiser',
+    dhikrsLabel: 'Dhikrs',
+    settingsLabel: 'Paramètres',
   },
   sq: {
     appTitle: 'Dhikr Counter',
@@ -241,6 +260,12 @@ export const translations = {
     subtractionModeTitle: 'Modaliteti i Zbritjes',
     subtractionModeMsg: 'Tani po zbrisni nga numërimi i dhikrit tuaj. Bëni kujdes!',
     gotItBtn: 'E kuptova',
+    
+    addingMode: 'Shto',
+    subtractionLabel: 'Zbrit',
+    resetLabel: 'Rivendos',
+    dhikrsLabel: 'Dhikret',
+    settingsLabel: 'Cilësimet',
   }
 };
 

@@ -259,25 +259,29 @@ export default function CounterScreen() {
         </View>
       )}
 
-      {/* ─── Bottom Toolbar ─── */}
-      <View style={styles.bottomToolbar}>
-        <View style={styles.toolItem}>
-          <TouchableOpacity style={styles.toolButton} onPress={handleReset}>
-            <Text style={styles.toolIcon}>↺</Text>
-          </TouchableOpacity>
-          <Text style={styles.toolLabel}>{t('resetLabel')}</Text>
-        </View>
-        <View style={styles.toolItem}>
-          <TouchableOpacity style={styles.toolButton} onPress={() => setShowDhikrsPanel(true)}>
-            <Text style={styles.toolIcon}>☰</Text>
-          </TouchableOpacity>
-          <Text style={styles.toolLabel}>{t('dhikrsLabel')}</Text>
-        </View>
-        <View style={styles.toolItem}>
-          <TouchableOpacity style={styles.toolButton} onPress={() => setShowSettingsPanel(true)}>
-            <Text style={styles.toolIcon}>⚙</Text>
-          </TouchableOpacity>
-          <Text style={styles.toolLabel}>{t('settingsLabel')}</Text>
+      {/* ─── Bottom Toolbar (Island) ─── */}
+      <View style={styles.toolbarIslandWrapper}>
+        <View style={styles.toolbarIsland}>
+          <View style={styles.toolItem}>
+            <TouchableOpacity style={styles.toolButton} onPress={handleReset}>
+              <Text style={styles.toolIcon}>↺</Text>
+            </TouchableOpacity>
+            <Text style={styles.toolLabel}>{t('resetLabel')}</Text>
+          </View>
+          <View style={styles.toolDivider} />
+          <View style={styles.toolItem}>
+            <TouchableOpacity style={styles.toolButton} onPress={() => setShowDhikrsPanel(true)}>
+              <Text style={styles.toolIcon}>☰</Text>
+            </TouchableOpacity>
+            <Text style={styles.toolLabel}>{t('dhikrsLabel')}</Text>
+          </View>
+          <View style={styles.toolDivider} />
+          <View style={styles.toolItem}>
+            <TouchableOpacity style={styles.toolButton} onPress={() => setShowSettingsPanel(true)}>
+              <Text style={styles.toolIcon}>⚙</Text>
+            </TouchableOpacity>
+            <Text style={styles.toolLabel}>{t('settingsLabel')}</Text>
+          </View>
         </View>
       </View>
 
@@ -626,6 +630,7 @@ const getStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
+    paddingBottom: 100,
   },
 
   // ─── Top Navigation ───
@@ -731,26 +736,49 @@ const getStyles = (colors: ThemeColors) => StyleSheet.create({
     fontWeight: '600',
   },
 
-  // ─── Bottom Toolbar ───
-  bottomToolbar: {
-    flexDirection: 'row',
-    justifyContent: 'space-evenly',
-    paddingBottom: 28,
+  // ─── Bottom Toolbar (Island) ───
+  toolbarIslandWrapper: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    paddingBottom: Math.max(Platform.OS === 'web' ? 20 : 28, 20),
     paddingTop: 8,
+    pointerEvents: 'box-none',
+  },
+  toolbarIsland: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 28,
+    paddingVertical: 8,
+    paddingHorizontal: 6,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  toolDivider: {
+    width: 1,
+    height: 28,
+    backgroundColor: colors.border,
+    opacity: 0.5,
   },
   toolItem: {
     alignItems: 'center',
-    gap: 4,
+    paddingHorizontal: 16,
+    gap: 2,
   },
   toolButton: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    borderWidth: 1.5,
-    borderColor: colors.border,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'transparent',
     WebkitTapHighlightColor: 'transparent',
   },
   toolIcon: {

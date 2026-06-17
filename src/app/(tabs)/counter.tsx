@@ -39,7 +39,7 @@ const LANGUAGES = [
 
 export default function CounterScreen() {
   const {
-    selectedDhikr, dhikrs, increment, decrement, selectDhikr,
+    selectedDhikr, dhikrs, increment, selectDhikr,
     resetDaily, addDhikr, deleteDhikr, updateDhikr,
     refreshDhikrs, syncError, loading: dhikrLoading,
   } = useDhikr();
@@ -51,12 +51,10 @@ export default function CounterScreen() {
   const styles = getStyles(colors);
 
   // ─── Counter State ───────────────────────────────
-  const [mode, setMode] = useState<'increment' | 'decrement'>('increment');
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const warningFadeAnim = useRef(new Animated.Value(0)).current;
   const [showFireworks, setShowFireworks] = useState(false);
   const [showLimitWarning, setShowLimitWarning] = useState(false);
-  const [showSubtractionModal, setShowSubtractionModal] = useState(false);
 
   // ─── Panel Visibility ────────────────────────────
   const [showDhikrsPanel, setShowDhikrsPanel] = useState(false);
@@ -112,21 +110,16 @@ export default function CounterScreen() {
   const handleTap = async () => {
     if (!selectedDhikr) return;
 
-    if (mode === 'increment') {
-      if (selectedDhikr.dailyLimit !== null && selectedDhikr.dailyCount >= selectedDhikr.dailyLimit) {
-        setShowLimitWarning(true);
-        if (Platform.OS !== 'web') Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-        return;
-      }
-      const isHittingLimit = selectedDhikr.dailyLimit !== null && (selectedDhikr.dailyCount + 1 === selectedDhikr.dailyLimit);
-      const success = await increment(selectedDhikr.id);
-      if (success && isHittingLimit) {
-        setShowFireworks(true);
-        if (Platform.OS !== 'web') Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      }
-    } else {
-      clearWarning();
-      if (selectedDhikr.dailyCount > 0) await decrement(selectedDhikr.id);
+    if (selectedDhikr.dailyLimit !== null && selectedDhikr.dailyCount >= selectedDhikr.dailyLimit) {
+      setShowLimitWarning(true);
+      if (Platform.OS !== 'web') Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+      return;
+    }
+    const isHittingLimit = selectedDhikr.dailyLimit !== null && (selectedDhikr.dailyCount + 1 === selectedDhikr.dailyLimit);
+    const success = await increment(selectedDhikr.id);
+    if (success && isHittingLimit) {
+      setShowFireworks(true);
+      if (Platform.OS !== 'web') Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     }
   };
 
@@ -139,16 +132,6 @@ export default function CounterScreen() {
       ? (currentIndex + 1) % dhikrs.length
       : (currentIndex - 1 + dhikrs.length) % dhikrs.length;
     selectDhikr(dhikrs[newIndex].id);
-  };
-
-  const toggleMode = () => {
-    if (Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    if (mode === 'increment') {
-      setMode('decrement');
-      setShowSubtractionModal(true);
-    } else {
-      setMode('increment');
-    }
   };
 
   const handleReset = async () => {
@@ -278,18 +261,6 @@ export default function CounterScreen() {
 
       {/* ─── Bottom Toolbar ─── */}
       <View style={styles.bottomToolbar}>
-        <View style={styles.toolItem}>
-          <TouchableOpacity style={[styles.toolButton, mode === 'decrement' && { borderColor: colors.error + '80' }]} onPress={toggleMode}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}>
-              <Text style={[styles.toolIcon, mode === 'decrement' && { color: colors.error }]}>+</Text>
-              <Text style={[styles.toolSlash, mode === 'decrement' && { color: colors.error }]}>/</Text>
-              <Text style={[styles.toolIcon, mode === 'decrement' && { color: colors.error }]}>−</Text>
-            </View>
-          </TouchableOpacity>
-          <Text style={[styles.toolLabel, mode === 'decrement' && { color: colors.error }]}>
-            {mode === 'increment' ? t('addingMode') : t('subtractionLabel')}
-          </Text>
-        </View>
         <View style={styles.toolItem}>
           <TouchableOpacity style={styles.toolButton} onPress={handleReset}>
             <Text style={styles.toolIcon}>↺</Text>
@@ -644,39 +615,6 @@ export default function CounterScreen() {
         </Pressable>
       </Modal>
 
-      {/* ─── Subtraction Mode Alert ─── */}
-      <Modal
-        animationType="fade"
-        transparent
-        visible={showSubtractionModal}
-        onRequestClose={() => setShowSubtractionModal(false)}
-      >
-        <View style={styles.formOverlay}>
-          <View style={styles.formContent}>
-            <View style={styles.warningIconContainer}>
-              <Text style={styles.warningIcon}>⚠️</Text>
-            </View>
-            <Text style={[styles.formTitle, {textAlign: 'center', fontSize: 20, marginBottom: 12}]}>
-              {t('subtractionModeTitle')}
-            </Text>
-            <Text style={{textAlign: 'center', fontSize: 15, color: colors.textSecondary, marginBottom: 24, lineHeight: 22}}>
-              {t('subtractionModeMsg')}
-            </Text>
-            <TouchableOpacity onPress={() => setShowSubtractionModal(false)}>
-              <LinearGradient
-                colors={[colors.error, '#C0392B']}
-                style={{ borderRadius: 12, paddingVertical: 14, alignItems: 'center' }}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-              >
-                <Text style={{ color: colors.background, fontSize: 16, fontWeight: '700' }}>
-                  {t('gotItBtn')}
-                </Text>
-              </LinearGradient>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
     </View>
   );
 }
@@ -824,22 +762,12 @@ const getStyles = (colors: ThemeColors) => StyleSheet.create({
     textAlignVertical: 'center',
     marginTop: Platform.OS === 'ios' ? -2 : 0, 
   },
-  toolSlash: {
-    color: colors.textMuted,
-    fontSize: 12,
-    fontWeight: '300',
-    textAlign: 'center',
-  },
   toolLabel: {
     color: colors.textMuted,
     fontSize: 10,
     fontWeight: '500',
     textAlign: 'center',
   },
-  toolIconActive: {
-    color: colors.error,
-  },
-
   // ─── Shared Panel Styles (Bottom Sheet) ───
   panelOverlay: {
     flex: 1,
@@ -1174,18 +1102,5 @@ const getStyles = (colors: ThemeColors) => StyleSheet.create({
     color: colors.background,
     fontWeight: '700',
     fontSize: 15,
-  },
-  warningIconContainer: {
-    alignSelf: 'center',
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: colors.error + '20',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  warningIcon: {
-    fontSize: 28,
   },
 });

@@ -38,7 +38,6 @@ interface DhikrContextType {
   deleteDhikr: (id: string) => Promise<void>;
   updateDhikr: (id: string, name: string, limit: number | null) => Promise<void>;
   increment: (id: string) => Promise<boolean>;
-  decrement: (id: string) => Promise<void>;
   resetDaily: (id: string) => Promise<void>;
 }
 
@@ -504,31 +503,6 @@ export function DhikrProvider({ children }: { children: ReactNode }) {
     return true;
   }, [user, dhikrs, scheduleSync, savePendingDeltasToCache]);
 
-  const decrement = useCallback(async (id: string) => {
-    if (!user) return;
-    const dhikr = dhikrs.find((d) => d.id === id);
-    if (!dhikr || dhikr.dailyCount <= 0) return;
-
-    if (Platform.OS !== 'web') {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    }
-
-    if (!pendingIncrementsRef.current[id]) {
-      pendingIncrementsRef.current[id] = { delta: 0, timeout: null };
-    }
-    pendingIncrementsRef.current[id].delta -= 1;
-    await savePendingDeltasToCache();
-
-    setDhikrs(current => current.map(d => {
-      if (d.id === id) {
-        return { ...d, dailyCount: Math.max(0, d.dailyCount - 1), totalCount: Math.max(0, d.totalCount - 1) };
-      }
-      return d;
-    }));
-
-    scheduleSync(id);
-  }, [user, dhikrs, scheduleSync, savePendingDeltasToCache]);
-
   const resetDaily = useCallback(async (id: string) => {
     if (!user) return;
     
@@ -568,7 +542,6 @@ export function DhikrProvider({ children }: { children: ReactNode }) {
         deleteDhikr,
         updateDhikr,
         increment,
-        decrement,
         resetDaily,
       }}
     >

@@ -60,11 +60,6 @@ export const translations = {
     goalCompleteTitle: 'ما شاء الله',
     goalCompleteSubtitle: 'Daily Goal Complete!',
     
-    // Subtraction
-    subtractionModeTitle: 'Subtraction Mode',
-    subtractionModeMsg: 'You are now subtracting from your dhikr count. Be careful!',
-    gotItBtn: 'Got it',
-    
     // Admin
     adminPanel: 'Admin Panel',
     admin: 'Admin',
@@ -80,8 +75,6 @@ export const translations = {
     adminAccessOnly: 'Admin access required',
     
     // Toolbar
-    addingMode: 'Adding',
-    subtractionLabel: 'Subtract',
     resetLabel: 'Reset',
     dhikrsLabel: 'Dhikrs',
     settingsLabel: 'Settings',
@@ -141,10 +134,6 @@ export const translations = {
     goalCompleteTitle: 'ما شاء الله',
     goalCompleteSubtitle: 'Tagesziel erreicht!',
     
-    subtractionModeTitle: 'Subtraktionsmodus',
-    subtractionModeMsg: 'Sie ziehen jetzt von Ihrem Dhikr-Zähler ab. Seien Sie vorsichtig!',
-    gotItBtn: 'Verstanden',
-    
     adminPanel: 'Admin-Bereich',
     admin: 'Admin',
     totalUsers: 'Benutzer gesamt',
@@ -158,8 +147,6 @@ export const translations = {
     dhikrCount: 'Dhikrs',
     adminAccessOnly: 'Admin-Zugriff erforderlich',
     
-    addingMode: 'Hinzufügen',
-    subtractionLabel: 'Abziehen',
     resetLabel: 'Zurücksetzen',
     dhikrsLabel: 'Dhikrs',
     settingsLabel: 'Einstellungen',
@@ -219,10 +206,6 @@ export const translations = {
     goalCompleteTitle: 'ما شاء الله',
     goalCompleteSubtitle: 'Objectif quotidien atteint!',
     
-    subtractionModeTitle: 'Mode Soustraction',
-    subtractionModeMsg: 'Vous soustrayez maintenant de votre compte dhikr. Soyez prudent!',
-    gotItBtn: 'Compris',
-    
     adminPanel: 'Panneau Admin',
     admin: 'Admin',
     totalUsers: 'Utilisateurs',
@@ -236,8 +219,6 @@ export const translations = {
     dhikrCount: 'Dhikrs',
     adminAccessOnly: 'Accès administrateur requis',
     
-    addingMode: 'Ajouter',
-    subtractionLabel: 'Soustraire',
     resetLabel: 'Réinitialiser',
     dhikrsLabel: 'Dhikrs',
     settingsLabel: 'Paramètres',
@@ -297,10 +278,6 @@ export const translations = {
     goalCompleteTitle: 'ما شاء الله',
     goalCompleteSubtitle: 'Qëllimi ditor u arrit!',
     
-    subtractionModeTitle: 'Modaliteti i Zbritjes',
-    subtractionModeMsg: 'Tani po zbrisni nga numërimi i dhikrit tuaj. Bëni kujdes!',
-    gotItBtn: 'E kuptova',
-    
     adminPanel: 'Paneli Admin',
     admin: 'Admin',
     totalUsers: 'Përdorues',
@@ -314,8 +291,6 @@ export const translations = {
     dhikrCount: 'Dhikre',
     adminAccessOnly: 'Kërkohet qasje admini',
     
-    addingMode: 'Shto',
-    subtractionLabel: 'Zbrit',
     resetLabel: 'Rivendos',
     dhikrsLabel: 'Dhikret',
     settingsLabel: 'Cilësimet',

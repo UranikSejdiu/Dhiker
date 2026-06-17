@@ -10,6 +10,7 @@ export interface AppUser {
   session_token: string;
   theme?: string;
   language?: string;
+  role?: string;
 }
 
 interface AuthContextType {

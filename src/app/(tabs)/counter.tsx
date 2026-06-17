@@ -24,6 +24,7 @@ import { apiRequest } from '../../config/api';
 import * as Haptics from 'expo-haptics';
 import Fireworks from '../../components/Fireworks';
 import FlagIcon from '../../components/FlagIcon';
+import AdminPanel from '../../components/AdminPanel';
 import Constants from 'expo-constants';
 import { APP_VERSION } from '../../constants/version';
 
@@ -60,6 +61,7 @@ export default function CounterScreen() {
   // ─── Panel Visibility ────────────────────────────
   const [showDhikrsPanel, setShowDhikrsPanel] = useState(false);
   const [showSettingsPanel, setShowSettingsPanel] = useState(false);
+  const [showAdminPanel, setShowAdminPanel] = useState(false);
 
   // ─── Dhikr Add/Edit Modal ────────────────────────
   const [dhikrModalVisible, setDhikrModalVisible] = useState(false);
@@ -427,6 +429,15 @@ export default function CounterScreen() {
                   <Text style={styles.settingsRowLabel}>Email</Text>
                   <Text style={styles.settingsRowValue} numberOfLines={1}>{user?.email}</Text>
                 </View>
+                {user?.role === 'admin' && (
+                  <>
+                    <View style={styles.settingsDivider} />
+                    <TouchableOpacity style={styles.settingsRow} onPress={() => { setShowSettingsPanel(false); setTimeout(() => setShowAdminPanel(true), 300) }}>
+                      <Text style={[styles.settingsRowLabel, { color: colors.primary, fontWeight: '700' }]}>{t('adminPanel')}</Text>
+                      <Text style={[styles.settingsRowValue, { color: colors.primary }]}>→</Text>
+                    </TouchableOpacity>
+                  </>
+                )}
               </View>
 
               {/* Theme / Appearance */}
@@ -556,6 +567,20 @@ export default function CounterScreen() {
               
               <View style={{ height: 40 }} />
             </ScrollView>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      {/* ─── Admin Panel Modal ─── */}
+      <Modal
+        animationType="slide"
+        transparent
+        visible={showAdminPanel}
+        onRequestClose={() => setShowAdminPanel(false)}
+      >
+        <Pressable style={styles.panelOverlay} onPress={() => setShowAdminPanel(false)}>
+          <Pressable style={styles.panelContent} onPress={e => e.stopPropagation()}>
+            <AdminPanel onClose={() => setShowAdminPanel(false)} />
           </Pressable>
         </Pressable>
       </Modal>

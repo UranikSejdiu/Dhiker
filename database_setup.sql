@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS `users` (
   `password_hash` VARCHAR(255) NOT NULL,
   `display_name` VARCHAR(255) DEFAULT NULL,
   `session_token` VARCHAR(64) DEFAULT NULL,
+  `role` VARCHAR(20) DEFAULT 'user',
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `idx_users_email` (`email`)

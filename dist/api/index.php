@@ -6,6 +6,8 @@
 //   ALTER TABLE users ADD COLUMN theme VARCHAR(50) DEFAULT 'dark-gold';
 //   ALTER TABLE users ADD COLUMN language VARCHAR(10) DEFAULT 'en';
 //   ALTER TABLE users ADD COLUMN token_expires_at DATETIME DEFAULT NULL;
+//   ALTER TABLE users ADD COLUMN role VARCHAR(20) DEFAULT 'user';
+//   -- To create an admin, run: UPDATE users SET role = 'admin' WHERE email = 'you@example.com';
 
 // CORS Headers — reflect the requesting origin instead of wildcard
 $corsOrigin = isset($_SERVER['HTTP_ORIGIN']) ? $_SERVER['HTTP_ORIGIN'] : '*';
@@ -265,7 +267,8 @@ try {
                     'display_name' => $user['display_name'],
                     'session_token' => $user['session_token'],
                     'theme' => $user['theme'] ?? null,
-                    'language' => $user['language'] ?? null
+                    'language' => $user['language'] ?? null,
+                    'role' => $user['role'] ?? 'user'
                 ]
             ]);
             break;
@@ -557,6 +560,50 @@ try {
             echo json_encode(['success' => true]);
             break;
             
+        case 'admin_check':
+            $user = authenticate($db, $input);
+            $isAdmin = isset($user['role']) && $user['role'] === 'admin';
+            echo json_encode(['admin' => $isAdmin, 'role' => $user['role'] ?? 'user']);
+            break;
+
+        case 'admin_users':
+            $user = authenticate($db, $input);
+            if (!isset($user['role']) || $user['role'] !== 'admin') {
+                http_response_code(403);
+                echo json_encode(['error' => 'Admin access required.']);
+                break;
+            }
+            $stmt = $db->prepare("
+                SELECT u.id, u.email, u.display_name, u.role, u.created_at, u.theme, u.language,
+                       (SELECT COUNT(*) FROM dhikrs WHERE user_id = u.id) AS dhikr_count
+                FROM users u
+                ORDER BY u.created_at DESC
+            ");
+            $stmt->execute();
+            $users = $stmt->fetchAll();
+            foreach ($users as &$u) {
+                $u['dhikr_count'] = (int)$u['dhikr_count'];
+            }
+            echo json_encode(['users' => $users]);
+            break;
+
+        case 'admin_stats':
+            $user = authenticate($db, $input);
+            if (!isset($user['role']) || $user['role'] !== 'admin') {
+                http_response_code(403);
+                echo json_encode(['error' => 'Admin access required.']);
+                break;
+            }
+            $totalUsers = $db->query("SELECT COUNT(*) FROM users")->fetchColumn();
+            $totalDhikrs = $db->query("SELECT COUNT(*) FROM dhikrs")->fetchColumn();
+            $totalCounts = $db->query("SELECT COALESCE(SUM(total_count), 0) FROM dhikrs")->fetchColumn();
+            echo json_encode([
+                'total_users' => (int)$totalUsers,
+                'total_dhikrs' => (int)$totalDhikrs,
+                'total_counts' => (int)$totalCounts,
+            ]);
+            break;
+
         default:
             http_response_code(404);
             echo json_encode(['error' => 'API Endpoint not found.']);

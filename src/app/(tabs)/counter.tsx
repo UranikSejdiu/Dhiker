@@ -226,7 +226,7 @@ export default function CounterScreen() {
               <Text style={styles.navIcon}>‹</Text>
             </TouchableOpacity>
             <View style={styles.dhikrNameContainer}>
-              <Text style={styles.dhikrName} numberOfLines={2}>{selectedDhikr.name}</Text>
+              <Text style={styles.dhikrName} numberOfLines={3}>{selectedDhikr.name}</Text>
             </View>
             <TouchableOpacity style={styles.navButton} onPress={() => cycleDhikr('next')}>
               <Text style={styles.navIcon}>›</Text>
@@ -323,7 +323,7 @@ export default function CounterScreen() {
                   onPress={() => handleSelectDhikr(item.id)}
                 >
                   <View style={styles.dhikrCardHeader}>
-                    <Text style={styles.dhikrCardTitle} numberOfLines={1}>{item.name}</Text>
+                    <Text style={styles.dhikrCardTitle} numberOfLines={2}>{item.name}</Text>
                     <View style={styles.dhikrCardActions}>
                       <TouchableOpacity
                         style={styles.dhikrCardActionBtn}
@@ -660,9 +660,10 @@ const getStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   dhikrName: {
     color: colors.success,
-    fontSize: 22,
+    fontSize: 16,
     fontWeight: '600',
     textAlign: 'center',
+    lineHeight: 22,
   },
 
   // ─── Counter Area ───

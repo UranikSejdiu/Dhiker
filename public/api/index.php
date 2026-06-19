@@ -7,6 +7,13 @@
 //   ALTER TABLE users ADD COLUMN language VARCHAR(10) DEFAULT 'en';
 //   ALTER TABLE users ADD COLUMN token_expires_at DATETIME DEFAULT NULL;
 //   ALTER TABLE users ADD COLUMN role VARCHAR(20) DEFAULT 'user';
+//   CREATE TABLE IF NOT EXISTS `sessions` (
+//     `id` VARCHAR(36) NOT NULL, `user_id` VARCHAR(36) NOT NULL, `token` VARCHAR(64) NOT NULL,
+//     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP, `expires_at` DATETIME DEFAULT NULL,
+//     PRIMARY KEY (`id`), UNIQUE KEY `idx_sessions_token` (`token`),
+//     KEY `idx_sessions_user_id` (`user_id`),
+//     CONSTRAINT `fk_sessions_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+//   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 //   -- To create an admin, run: UPDATE users SET role = 'admin' WHERE email = 'you@example.com';
 
 // CORS Headers — reflect the requesting origin instead of wildcard
@@ -57,6 +64,7 @@ function getRequestHeaders() {
 }
 
 // Helper to authenticate user from Bearer Token or POST body _token
+// Checks sessions table first (per-device), falls back to legacy users.session_token
 function authenticate($db, $input = []) {
     $headers = getRequestHeaders();
     $authHeader = '';
@@ -80,11 +88,28 @@ function authenticate($db, $input = []) {
     }
     
     if (!empty($token)) {
+        // Try sessions table first (per-device sessions from multi-device support)
+        $stmt = $db->prepare("SELECT u.*, s.id AS session_id, s.expires_at AS session_expires_at FROM sessions s JOIN users u ON s.user_id = u.id WHERE s.token = ?");
+        $stmt->execute([$token]);
+        $row = $stmt->fetch();
+        if ($row) {
+            $expiresAt = $row['session_expires_at'] ?? null;
+            // Check session expiry
+            if (!empty($expiresAt) && strtotime($expiresAt) < time()) {
+                $stmt = $db->prepare("DELETE FROM sessions WHERE id = ?");
+                $stmt->execute([$row['session_id']]);
+                http_response_code(401);
+                echo json_encode(['error' => 'Session expired. Please log in again.']);
+                exit;
+            }
+            return $row;
+        }
+        
+        // Fallback: legacy users.session_token column
         $stmt = $db->prepare("SELECT * FROM users WHERE session_token = ?");
         $stmt->execute([$token]);
-        $user = $stmt->fetch();
+        $user = $stmt->fetch(PDO::FETCH_ASSOC);
         if ($user) {
-            // Check token expiry (null = no expiry / legacy)
             if (!empty($user['token_expires_at']) && strtotime($user['token_expires_at']) < time()) {
                 $stmt = $db->prepare("UPDATE users SET session_token = NULL, token_expires_at = NULL WHERE id = ?");
                 $stmt->execute([$user['id']]);
@@ -240,11 +265,11 @@ try {
             
             $expiresAt = date('Y-m-d H:i:s', strtotime('+6 months'));
             if ($user) {
-                // Reuse existing token so multiple devices stay active
+                $userId = $user['id'];
+                // Keep legacy column for transition
                 $sessionToken = !empty($user['session_token']) ? $user['session_token'] : bin2hex(random_bytes(32));
                 $stmt = $db->prepare("UPDATE users SET session_token = ?, token_expires_at = ? WHERE id = ?");
-                $stmt->execute([$sessionToken, $expiresAt, $user['id']]);
-                $userId = $user['id'];
+                $stmt->execute([$sessionToken, $expiresAt, $userId]);
             } else {
                 $sessionToken = bin2hex(random_bytes(32));
                 $userId = generateUuid();
@@ -253,9 +278,14 @@ try {
                 $stmt = $db->prepare("INSERT INTO users (id, email, password_hash, display_name, session_token, token_expires_at) VALUES (?, ?, ?, ?, ?, ?)");
                 $stmt->execute([$userId, $email, $randomPasswordHash, $name, $sessionToken, $expiresAt]);
             }
+            // Create per-device session
+            $sessionId = generateUuid();
+            $deviceToken = bin2hex(random_bytes(32));
+            $stmt = $db->prepare("INSERT INTO sessions (id, user_id, token, expires_at) VALUES (?, ?, ?, ?)");
+            $stmt->execute([$sessionId, $userId, $deviceToken, $expiresAt]);
             
-            // Redirect back to login PWA with token query param
-            header("Location: /login?token=" . urlencode($sessionToken));
+            // Redirect back to login PWA with device token
+            header("Location: /login?token=" . urlencode($deviceToken));
             exit;
 
         case 'get_profile':
@@ -310,25 +340,41 @@ try {
             // Create user
             $userId = generateUuid();
             $hash = password_hash($password, PASSWORD_BCRYPT);
-            $token = bin2hex(random_bytes(32));
+            $legacyToken = bin2hex(random_bytes(32));
             
             $stmt = $db->prepare("INSERT INTO users (id, email, password_hash, display_name, session_token, token_expires_at) VALUES (?, ?, ?, ?, ?, ?)");
-            $stmt->execute([$userId, $email, $hash, $displayName, $token, $expiresAt]);
+            $stmt->execute([$userId, $email, $hash, $displayName, $legacyToken, $expiresAt]);
+            // Create per-device session
+            $sessionId = generateUuid();
+            $deviceToken = bin2hex(random_bytes(32));
+            $stmt = $db->prepare("INSERT INTO sessions (id, user_id, token, expires_at) VALUES (?, ?, ?, ?)");
+            $stmt->execute([$sessionId, $userId, $deviceToken, $expiresAt]);
             
             echo json_encode([
                 'user' => [
                     'id' => $userId,
                     'email' => $email,
                     'display_name' => $displayName,
-                    'session_token' => $token
+                    'session_token' => $deviceToken
                 ]
             ]);
             break;
             
         case 'logout':
             $user = authenticate($db, $input);
-            $stmt = $db->prepare("UPDATE users SET session_token = NULL, token_expires_at = NULL WHERE id = ?");
-            $stmt->execute([$user['id']]);
+            // Delete per-device session from sessions table
+            $headers = getRequestHeaders();
+            $authHeader = '';
+            foreach ($headers as $key => $val) {
+                if (strtolower($key) === 'authorization') { $authHeader = $val; break; }
+            }
+            $token = '';
+            if (preg_match('/Bearer\s(\S+)/i', $authHeader, $matches)) { $token = $matches[1]; }
+            if (empty($token) && !empty($input['_token'])) { $token = $input['_token']; }
+            if (!empty($token)) {
+                $stmt = $db->prepare("DELETE FROM sessions WHERE token = ? AND user_id = ?");
+                $stmt->execute([$token, $user['id']]);
+            }
             echo json_encode(['success' => true]);
             break;
 
@@ -354,17 +400,22 @@ try {
             }
             
             $expiresAt = date('Y-m-d H:i:s', strtotime('+6 months'));
-            // Reuse existing token so multiple devices stay active
-            $token = !empty($user['session_token']) ? $user['session_token'] : bin2hex(random_bytes(32));
+            // Keep legacy column for transition
+            $legacyToken = !empty($user['session_token']) ? $user['session_token'] : bin2hex(random_bytes(32));
             $stmt = $db->prepare("UPDATE users SET session_token = ?, token_expires_at = ? WHERE id = ?");
-            $stmt->execute([$token, $expiresAt, $user['id']]);
+            $stmt->execute([$legacyToken, $expiresAt, $user['id']]);
+            // Create per-device session
+            $sessionId = generateUuid();
+            $deviceToken = bin2hex(random_bytes(32));
+            $stmt = $db->prepare("INSERT INTO sessions (id, user_id, token, expires_at) VALUES (?, ?, ?, ?)");
+            $stmt->execute([$sessionId, $user['id'], $deviceToken, $expiresAt]);
             
             echo json_encode([
                 'user' => [
                     'id' => $user['id'],
                     'email' => $user['email'],
                     'display_name' => $user['display_name'],
-                    'session_token' => $token
+                    'session_token' => $deviceToken
                 ]
             ]);
             break;

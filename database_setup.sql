@@ -14,6 +14,19 @@ CREATE TABLE IF NOT EXISTS `users` (
   UNIQUE KEY `idx_users_email` (`email`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- 1b. Create Sessions Table (per-device auth, multi-device support)
+CREATE TABLE IF NOT EXISTS `sessions` (
+  `id` VARCHAR(36) NOT NULL,
+  `user_id` VARCHAR(36) NOT NULL,
+  `token` VARCHAR(64) NOT NULL,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `expires_at` DATETIME DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `idx_sessions_token` (`token`),
+  KEY `idx_sessions_user_id` (`user_id`),
+  CONSTRAINT `fk_sessions_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- 2. Create Dhikrs Table
 CREATE TABLE IF NOT EXISTS `dhikrs` (
   `id` VARCHAR(36) NOT NULL,

@@ -24,7 +24,7 @@ export interface ThemeColors {
   gradientBackground: readonly [string, string, string];
 }
 
-export type ThemeName = 'dark-gold' | 'pure-light' | 'emerald' | 'midnight';
+export type ThemeName = 'dark-gold' | 'pure-light' | 'emerald' | 'midnight' | 'amoled';
 
 export const predefinedThemes: Record<ThemeName, ThemeColors> = {
   'dark-gold': {
@@ -118,6 +118,29 @@ export const predefinedThemes: Record<ThemeName, ThemeColors> = {
     gradientPrimary: ['#0284C7', '#38BDF8', '#0284C7'] as const,
     gradientSecondary: ['#6366F1', '#818CF8', '#6366F1'] as const,
     gradientBackground: ['#020617', '#0F172A', '#020617'] as const,
+  },
+  'amoled': {
+    background: '#000000',
+    surface: '#0A0A0A',
+    surfaceLight: '#141414',
+    card: '#0A0A0A',
+    primary: '#D4A843',
+    primaryLight: '#E8C87A',
+    primaryDark: '#B8860B',
+    secondary: '#2DD4BF',
+    secondaryLight: '#5EEAD4',
+    accent: '#818CF8',
+    text: '#F8F8F8',
+    textSecondary: '#A0A0A0',
+    textMuted: '#555555',
+    error: '#EF4444',
+    success: '#22C55E',
+    warning: '#F59E0B',
+    border: 'rgba(212, 168, 67, 0.12)',
+    overlay: 'rgba(0, 0, 0, 0.85)',
+    gradientPrimary: ['#D4A843', '#E8C87A', '#D4A843'] as const,
+    gradientSecondary: ['#2DD4BF', '#5EEAD4', '#2DD4BF'] as const,
+    gradientBackground: ['#000000', '#0A0A0A', '#000000'] as const,
   }
 };
 

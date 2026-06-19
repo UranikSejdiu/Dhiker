@@ -578,7 +578,7 @@ try {
             $theme = isset($input['theme']) ? $input['theme'] : null;
             $language = isset($input['language']) ? $input['language'] : null;
             
-            $validThemes = ['dark-gold', 'pure-light', 'emerald', 'midnight'];
+            $validThemes = ['dark-gold', 'pure-light', 'emerald', 'midnight', 'amoled'];
             $validLanguages = ['en', 'de', 'fr', 'sq'];
             
             if ($theme !== null && !in_array($theme, $validThemes)) {

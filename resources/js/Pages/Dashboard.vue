@@ -67,22 +67,38 @@ onMounted(() => {
 
   document.addEventListener('visibilitychange', onVisibilityChange)
   window.addEventListener('beforeunload', onBeforeUnload)
+  window.addEventListener('online', onOnline)
+  window.addEventListener('focus', onFocus)
 })
 
 onUnmounted(() => {
   document.removeEventListener('visibilitychange', onVisibilityChange)
   window.removeEventListener('beforeunload', onBeforeUnload)
+  window.removeEventListener('online', onOnline)
+  window.removeEventListener('focus', onFocus)
   sync.sync()
 })
 
 function onVisibilityChange() {
-  if (document.visibilityState === 'visible') {
+  if (document.visibilityState === 'visible' && sync.hasPending.value) {
     sync.sync()
   }
 }
 
 function onBeforeUnload() {
   sync.sync()
+}
+
+function onOnline() {
+  if (sync.hasPending.value) {
+    sync.sync()
+  }
+}
+
+function onFocus() {
+  if (sync.hasPending.value) {
+    sync.sync()
+  }
 }
 
 watch(() => selectedId.value, (newId, oldId) => {

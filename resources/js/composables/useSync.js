@@ -5,6 +5,7 @@ const STORAGE_KEY = 'dhikr_sync'
 
 const hasPending = ref(false)
 const dhikrCounts = ref({})
+let syncTimer = null
 
 function loadFromServer(dhikrs) {
   const map = {}
@@ -20,9 +21,8 @@ function loadFromStorage() {
     if (raw) {
       const stored = JSON.parse(raw)
       for (const [id, counts] of Object.entries(stored)) {
-        if (dhikrCounts.value[id]) {
-          dhikrCounts.value[id].total_count = counts.total_count
-          dhikrCounts.value[id].daily_count = counts.daily_count
+        if (!dhikrCounts.value[id]) {
+          dhikrCounts.value[id] = { total_count: counts.total_count, daily_count: counts.daily_count }
         }
       }
     }
@@ -33,12 +33,20 @@ function persistToStorage() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(dhikrCounts.value))
 }
 
+function scheduleSync() {
+  if (syncTimer) clearTimeout(syncTimer)
+  syncTimer = setTimeout(() => {
+    sync()
+  }, 2000)
+}
+
 function increment(id) {
   if (!dhikrCounts.value[id]) return
   dhikrCounts.value[id].total_count++
   dhikrCounts.value[id].daily_count++
   persistToStorage()
   hasPending.value = true
+  scheduleSync()
 }
 
 function resetCount(id) {
@@ -47,9 +55,20 @@ function resetCount(id) {
   dhikrCounts.value[id].daily_count = 0
   persistToStorage()
   hasPending.value = true
+  scheduleSync()
 }
 
 function sync() {
+  if (syncTimer) {
+    clearTimeout(syncTimer)
+    syncTimer = null
+  }
+
+  if (!navigator.onLine) {
+    hasPending.value = true
+    return
+  }
+
   const payload = Object.entries(dhikrCounts.value).map(([id, counts]) => ({
     id: Number(id),
     total_count: counts.total_count,

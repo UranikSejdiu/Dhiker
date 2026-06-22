@@ -51,7 +51,7 @@ onMounted(() => {
 
       <div ref="headerRef" class="text-center mb-10" style="opacity: 0; transform: scale(0.8); transition: all 0.8s ease">
         <div class="w-[90px] h-[90px] rounded-full mx-auto mb-4 flex items-center justify-center" :style="{ backgroundColor: colors.surface, border: `2px solid ${colors.border}`, boxShadow: `0 4px 12px ${colors.primary}40` }">
-          <i class="fi fi-sr-star text-[42px]" :style="{ color: colors.primary }"></i>
+          <span class="text-[42px]" :style="{ color: colors.primary }">☪</span>
         </div>
         <div class="text-[32px] font-bold tracking-wider mb-2" :style="{ color: colors.text }">{{ t('appTitle') }}</div>
         <div class="text-[22px] mb-[6px] font-light" :style="{ color: colors.primary }">بِسْمِ اللهِ</div>

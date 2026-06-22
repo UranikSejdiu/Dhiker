@@ -14,15 +14,11 @@
 - **`composables/useTheme.js`** — 5 themes (dark-gold/pure-light/emerald/midnight/amoled), CSS vars, localStorage
 - Login.vue + Dashboard.vue: all strings → `t()`, all unicode icons → `<i class="fi fi-*">`, all colors → theme `colors` reactive
 - Builds clean with `npm run build`
-- **PWA**: manifest.json, sw.js, icons (192+512) in `public/` — committed
-- **Service Worker**: cache strategies (Vite assets cache-first, CDN stale-while-revalidate, app routes network-first with Inertia support)
-- **Real-time**: `laravel/reverb` added to composer.json (uncommitted)
 
 ## Pending (next)
-1. ~~Set up PWA manifest + service worker~~ ✓ Done
+1. Set up PWA manifest + service worker
 2. Push git and deploy to Plesk
 3. Test full auth flow (email + Google OAuth)
-4. Review & commit reverb/broadcasting changes if needed
 
 ## Key Context
 - **New app**: `C:\laragon\www\dhikr-counter-laravel` (all work here)

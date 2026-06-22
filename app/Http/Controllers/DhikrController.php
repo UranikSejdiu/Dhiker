@@ -1,7 +1,6 @@
 <?php
 namespace App\Http\Controllers;
 
-use App\Events\DhikrCountUpdated;
 use App\Models\Dhikr;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -49,8 +48,6 @@ class DhikrController extends Controller
             $dhikr->increment('daily_count');
         });
 
-        broadcast(new DhikrCountUpdated($dhikr->fresh()));
-
         return redirect()->back();
     }
 
@@ -86,8 +83,6 @@ class DhikrController extends Controller
             'daily_count' => 0,
             'last_reset_date' => now()->toDateString(),
         ]);
-
-        broadcast(new DhikrCountUpdated($dhikr->fresh()));
 
         return redirect()->back();
     }

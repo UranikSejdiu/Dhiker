@@ -14,10 +14,23 @@ try {
   const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
   const currentVersion = packageJson.version || '1.0.0';
 
-  // 2. Increment patch version
+  // 2. Bump version with rollover (patch hits 10 → minor bumps, minor hits 10 → major bumps)
   const parts = currentVersion.split('.');
   if (parts.length === 3) {
-    parts[2] = parseInt(parts[2], 10) + 1;
+    let major = parseInt(parts[0], 10)
+    let minor = parseInt(parts[1], 10)
+    let patch = parseInt(parts[2], 10) + 1
+    if (patch >= 10) {
+      patch = 0
+      minor++
+    }
+    if (minor >= 10) {
+      minor = 0
+      major++
+    }
+    parts[0] = major
+    parts[1] = minor
+    parts[2] = patch
   } else {
     parts.push('1');
   }

@@ -224,6 +224,12 @@ const resetDaily = () => {
   }
 }
 
+const hardRefresh = () => {
+  localStorage.removeItem('dhikr_sync')
+  sync.dhikrCounts.value = {}
+  router.reload({ preserveScroll: true })
+}
+
 const logout = () => {
   router.post(route('logout'))
 }
@@ -423,7 +429,7 @@ const logout = () => {
           </div>
 
           <div :style="{ color: colors.textSecondary, fontSize: '12px', fontWeight: '600', letterSpacing: '1px', marginBottom: '8px', marginLeft: '4px', marginTop: '24px' }">SYNC</div>
-          <button @click="router.reload({ preserveScroll: true })" :style="{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px', backgroundColor: colors.surfaceLight, borderRadius: '14px', border: `1px solid ${colors.border}`, color: colors.textSecondary, fontSize: '15px', cursor: 'pointer', textAlign: 'left' }">
+          <button @click="hardRefresh" :style="{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px', backgroundColor: colors.surfaceLight, borderRadius: '14px', border: `1px solid ${colors.border}`, color: colors.textSecondary, fontSize: '15px', cursor: 'pointer', textAlign: 'left' }">
             <span>{{ t('refreshFromServer') }}</span>
           </button>
 

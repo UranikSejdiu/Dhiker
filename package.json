@@ -1,23 +1,25 @@
 {
-    "$schema": "https://www.schemastore.org/package.json",
-    "private": true,
-    "type": "module",
-    "version": "1.1.1",
-    "scripts": {
-        "build": "node bump-version.js && vite build",
-        "dev": "vite"
-    },
-    "devDependencies": {
-        "@inertiajs/vue3": "^2.0.0",
-        "@tailwindcss/forms": "^0.5.3",
-        "@vitejs/plugin-vue": "^6.0.0",
-        "autoprefixer": "^10.4.12",
-        "axios": "^1.11.0",
-        "concurrently": "^9.0.1",
-        "laravel-vite-plugin": "^2.0.0",
-        "postcss": "^8.4.31",
-        "tailwindcss": "^3.2.1",
-        "vite": "^7.0.7",
-        "vue": "^3.4.0"
-    }
+  "$schema": "https://www.schemastore.org/package.json",
+  "private": true,
+  "type": "module",
+  "version": "1.1.1",
+  "scripts": {
+    "build": "node bump-version.js && vite build",
+    "dev": "vite",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "@inertiajs/vue3": "^2.0.0",
+    "@tailwindcss/forms": "^0.5.3",
+    "@vitejs/plugin-vue": "^6.0.0",
+    "autoprefixer": "^10.4.12",
+    "axios": "^1.11.0",
+    "concurrently": "^9.0.1",
+    "husky": "^9.1.7",
+    "laravel-vite-plugin": "^2.0.0",
+    "postcss": "^8.4.31",
+    "tailwindcss": "^3.2.1",
+    "vite": "^7.0.7",
+    "vue": "^3.4.0"
+  }
 }

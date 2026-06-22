@@ -1,6 +1,6 @@
 <script setup>
 import { Head, router, usePage } from '@inertiajs/vue3'
-import { ref, computed, onMounted, watch, nextTick } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import Fireworks from '../Components/Fireworks.vue'
 import { APP_VERSION } from '../constants/version'
 import FlagIcon from '../Components/FlagIcon.vue'
@@ -62,7 +62,19 @@ onMounted(() => {
       fadeRef.value.style.transform = 'translateY(0)'
     }
   }, 100)
+
+  document.addEventListener('visibilitychange', onVisibilityChange)
 })
+
+onUnmounted(() => {
+  document.removeEventListener('visibilitychange', onVisibilityChange)
+})
+
+function onVisibilityChange() {
+  if (document.visibilityState === 'visible') {
+    router.reload({ preserveScroll: true, preserveState: true })
+  }
+}
 
 watch(() => selectedId.value, () => {
   if (fadeRef.value) {

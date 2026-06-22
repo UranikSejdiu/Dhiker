@@ -1,4 +1,4 @@
-const CACHE_NAME = 'dhikr-counter-v1';
+const CACHE_NAME = 'dhikr-counter-v2';
 const PRECACHE_ASSETS = [
   '/',
   '/manifest.json',

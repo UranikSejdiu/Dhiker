@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Dhikr extends Model
 {
-    protected $fillable = ['user_id', 'name', 'total_count', 'daily_count', 'daily_limit', 'last_reset_date'];
+    protected $fillable = ['name', 'total_count', 'daily_count', 'daily_limit', 'last_reset_date'];
 
     protected function casts(): array
     {

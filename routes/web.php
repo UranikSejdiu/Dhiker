@@ -20,6 +20,7 @@ Route::middleware(['auth'])->group(function () {
     Route::delete('/dhikrs/{dhikr}', [DhikrController::class, 'destroy'])->name('dhikrs.destroy');
     Route::post('/dhikrs/{dhikr}/increment', [DhikrController::class, 'increment'])->name('dhikrs.increment')->middleware('throttle:60,1');
     Route::post('/dhikrs/{dhikr}/reset', [DhikrController::class, 'resetCounts'])->name('dhikrs.reset');
+    Route::post('/dhikrs/sync', [DhikrController::class, 'sync'])->name('dhikrs.sync');
     Route::patch('/settings', [SettingsController::class, 'update'])->name('settings.update');
 });
 

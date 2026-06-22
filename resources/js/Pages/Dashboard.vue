@@ -6,6 +6,7 @@ import { APP_VERSION } from '../constants/version'
 import FlagIcon from '../Components/FlagIcon.vue'
 import { useLanguage } from '../composables/useLanguage'
 import { useTheme } from '../composables/useTheme'
+import { useSync } from '../composables/useSync'
 
 const LANGUAGES_LIST = [
   { code: 'en', name: 'English', countryCode: 'gb' },
@@ -20,6 +21,7 @@ const props = defineProps({
 
 const { t, language, languages, setLanguage } = useLanguage()
 const { themeName, themeNames, themes, colors, setTheme } = useTheme()
+const sync = useSync()
 
 const selectedId = ref(null)
 const showFireworks = ref(false)
@@ -35,24 +37,24 @@ const confirmAction = ref(null)
 const fadeRef = ref(null)
 const loading = ref(false)
 
-const localTotal = ref(0)
-const localDaily = ref(0)
+const localTotal = computed(() => {
+  if (selectedId.value && sync.dhikrCounts.value[selectedId.value]) {
+    return sync.dhikrCounts.value[selectedId.value].total_count
+  }
+  return 0
+})
+const localDaily = computed(() => {
+  if (selectedId.value && sync.dhikrCounts.value[selectedId.value]) {
+    return sync.dhikrCounts.value[selectedId.value].daily_count
+  }
+  return 0
+})
 
 const selectedDhikr = computed(() => props.dhikrs.find(d => d.id === selectedId.value) || null)
 
-function loadLocal() {
-  if (selectedDhikr.value) {
-    localTotal.value = selectedDhikr.value.total_count || 0
-    localDaily.value = selectedDhikr.value.daily_count || 0
-  } else {
-    localTotal.value = 0
-    localDaily.value = 0
-  }
-}
-
-watch(selectedId, loadLocal, { immediate: true })
-
 onMounted(() => {
+  sync.loadFromServer(props.dhikrs)
+  sync.loadFromStorage()
   if (props.dhikrs.length > 0) {
     selectedId.value = props.dhikrs[0].id
   }
@@ -64,19 +66,29 @@ onMounted(() => {
   }, 100)
 
   document.addEventListener('visibilitychange', onVisibilityChange)
+  window.addEventListener('beforeunload', onBeforeUnload)
 })
 
 onUnmounted(() => {
   document.removeEventListener('visibilitychange', onVisibilityChange)
+  window.removeEventListener('beforeunload', onBeforeUnload)
+  sync.sync()
 })
 
 function onVisibilityChange() {
   if (document.visibilityState === 'visible') {
-    router.reload({ preserveScroll: true, preserveState: true })
+    sync.sync()
   }
 }
 
-watch(() => selectedId.value, () => {
+function onBeforeUnload() {
+  sync.sync()
+}
+
+watch(() => selectedId.value, (newId, oldId) => {
+  if (oldId !== null && newId !== oldId) {
+    sync.sync()
+  }
   if (fadeRef.value) {
     fadeRef.value.style.opacity = '0'
     fadeRef.value.style.transform = 'translateY(10px)'
@@ -105,17 +117,11 @@ const increment = () => {
     return
   }
   const willHitLimit = d.daily_limit !== null && (localDaily.value + 1 >= d.daily_limit)
-  localTotal.value++
-  localDaily.value++
-  router.post(route('dhikrs.increment', d.id), {}, {
-    preserveScroll: true,
-    onSuccess: () => {
-      if (willHitLimit) {
-        showFireworks.value = true
-        setTimeout(() => { showFireworks.value = false }, 3000)
-      }
-    },
-  })
+  sync.increment(selectedId.value)
+  if (willHitLimit) {
+    showFireworks.value = true
+    setTimeout(() => { showFireworks.value = false }, 3000)
+  }
 }
 
 const openCreateModal = () => {
@@ -196,12 +202,8 @@ const resetDaily = () => {
     title: t('resetLabel'),
     message: t('resetDhikrConfirm'),
     onConfirm: () => {
-      localTotal.value = 0
-      localDaily.value = 0
-      router.post(route('dhikrs.reset', selectedDhikr.value.id), {}, {
-        preserveScroll: true,
-        onSuccess: () => { confirmAction.value = null },
-      })
+      sync.resetCount(selectedId.value)
+      confirmAction.value = null
     },
   }
 }
@@ -305,9 +307,9 @@ const logout = () => {
               </div>
             </div>
             <div :style="{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }">
-              <span :style="{ color: colors.textMuted, fontSize: '12px' }">{{ t('total') }} {{ d.total_count }}</span>
+              <span :style="{ color: colors.textMuted, fontSize: '12px' }">{{ t('total') }} {{ sync.dhikrCounts.value[d.id]?.total_count ?? d.total_count }}</span>
               <span v-if="d.daily_limit !== null" :style="{ color: colors.primary, fontSize: '14px', fontWeight: '600' }">
-                {{ d.daily_count }}/{{ d.daily_limit }}
+                {{ sync.dhikrCounts.value[d.id]?.daily_count ?? d.daily_count }}/{{ d.daily_limit }}
               </span>
             </div>
             <div v-if="d.daily_limit !== null" :style="{ height: '4px', backgroundColor: colors.border, borderRadius: '2px', overflow: 'hidden', marginTop: '10px' }">
@@ -316,8 +318,8 @@ const logout = () => {
                   height: '100%',
                   borderRadius: '2px',
                   transition: 'width 0.3s',
-                  width: Math.min((d.daily_count || 0) / d.daily_limit * 100, 100) + '%',
-                  backgroundColor: d.daily_count >= d.daily_limit ? colors.success : colors.primary
+                  width: Math.min(((sync.dhikrCounts.value[d.id]?.daily_count ?? d.daily_count) || 0) / d.daily_limit * 100, 100) + '%',
+                  backgroundColor: (sync.dhikrCounts.value[d.id]?.daily_count ?? d.daily_count) >= d.daily_limit ? colors.success : colors.primary
                 }"
               />
             </div>

@@ -32,20 +32,19 @@ class DhikrController extends Controller
 
     public function increment(Dhikr $dhikr)
     {
-        $this->authorize('view', $dhikr);
-
-        $today = now()->toDateString();
-
-        if (!$dhikr->last_reset_date || $dhikr->last_reset_date->toDateString() !== $today) {
-            $dhikr->update([
-                'daily_count' => 0,
-                'last_reset_date' => $today,
-            ]);
-        }
+        $this->authorize('update', $dhikr);
 
         DB::transaction(function () use ($dhikr) {
-            $dhikr->increment('total_count');
-            $dhikr->increment('daily_count');
+            $today = now()->toDateString();
+
+            if (!$dhikr->last_reset_date || $dhikr->last_reset_date->toDateString() !== $today) {
+                $dhikr->daily_count = 0;
+                $dhikr->last_reset_date = $today;
+            }
+
+            $dhikr->total_count++;
+            $dhikr->daily_count++;
+            $dhikr->save();
         });
 
         return redirect()->back();
@@ -76,7 +75,7 @@ class DhikrController extends Controller
 
     public function resetCounts(Dhikr $dhikr)
     {
-        $this->authorize('view', $dhikr);
+        $this->authorize('update', $dhikr);
 
         $dhikr->update([
             'total_count' => 0,
@@ -85,5 +84,32 @@ class DhikrController extends Controller
         ]);
 
         return redirect()->back();
+    }
+
+    public function sync(Request $request)
+    {
+        $data = $request->validate([
+            'dhikrs' => 'required|array|min:1',
+            'dhikrs.*.id' => 'required|integer|exists:dhikrs,id',
+            'dhikrs.*.total_count' => 'required|integer|min:0',
+            'dhikrs.*.daily_count' => 'required|integer|min:0',
+        ]);
+
+        $userIds = Auth::user()->dhikrs()->pluck('id')->flip();
+
+        DB::transaction(function () use ($data, $userIds) {
+            foreach ($data['dhikrs'] as $item) {
+                if (!$userIds->has($item['id'])) {
+                    abort(403);
+                }
+                Dhikr::where('id', $item['id'])->update([
+                    'total_count' => $item['total_count'],
+                    'daily_count' => $item['daily_count'],
+                ]);
+            }
+        });
+
+        $dhikrs = Auth::user()->dhikrs()->orderBy('created_at', 'desc')->get();
+        return inertia('Dashboard', ['dhikrs' => $dhikrs]);
     }
 }

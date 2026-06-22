@@ -226,8 +226,7 @@ const resetDaily = () => {
 
 const hardRefresh = () => {
   localStorage.removeItem('dhikr_sync')
-  sync.dhikrCounts.value = {}
-  router.reload({ preserveScroll: true })
+  window.location.reload()
 }
 
 const logout = () => {

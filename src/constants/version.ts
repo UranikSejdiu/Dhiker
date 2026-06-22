@@ -1,2 +1,2 @@
-// Generated automatically by app.config.ts. Do not edit.
-export const APP_VERSION = '1.6.9';
+// Generated automatically by prebuild script. Do not edit.
+export const APP_VERSION = '1.0.1';

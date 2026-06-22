@@ -1,186 +1,113 @@
-import React, { useEffect, useRef } from 'react';
-import { Animated, Dimensions, StyleSheet, View, Text } from 'react-native';
-import { useLanguage } from '../context/LanguageContext';
-import { useAppTheme } from '../context/ThemeContext';
-import { ThemeColors } from '../utils/theme';
+'use client'
 
-const { width, height } = Dimensions.get('window');
+import { useEffect, useState, useCallback } from 'react'
 
-const PARTICLES = 50;
-const EMOJIS = ['🎉', '✨', '🌟', '💫', '🎊', '💚', '🤲', '☪️', '🕌', '📿', '🌙', '⭐', '🥳', '🏆'];
-
-export default function Fireworks({ onComplete }: { onComplete: () => void }) {
-  const animations = useRef([...Array(PARTICLES)].map(() => new Animated.Value(0))).current;
-  const bannerAnim = useRef(new Animated.Value(0)).current;
-  const { t } = useLanguage();
-  const { colors } = useAppTheme();
-  const styles = getStyles(colors);
-
-  useEffect(() => {
-    // Stagger particle launches for a more natural burst feel
-    const particleAnims = animations.map((anim, i) => {
-      return Animated.sequence([
-        Animated.delay(Math.random() * 300), // Random stagger up to 300ms
-        Animated.timing(anim, {
-          toValue: 1,
-          duration: 1800 + Math.random() * 1200,
-          useNativeDriver: true,
-        }),
-      ]);
-    });
-
-    // Banner slides in then fades out
-    const bannerSequence = Animated.sequence([
-      Animated.spring(bannerAnim, {
-        toValue: 1,
-        friction: 6,
-        tension: 40,
-        useNativeDriver: true,
-      }),
-      Animated.delay(1500),
-      Animated.timing(bannerAnim, {
-        toValue: 2,
-        duration: 600,
-        useNativeDriver: true,
-      }),
-    ]);
-
-    Animated.parallel([
-      Animated.stagger(30, particleAnims),
-      bannerSequence,
-    ]).start(() => {
-      onComplete();
-    });
-  }, [animations, bannerAnim, onComplete]);
-
-  // Banner interpolations
-  const bannerScale = bannerAnim.interpolate({
-    inputRange: [0, 1, 2],
-    outputRange: [0.3, 1, 1.1],
-  });
-  const bannerOpacity = bannerAnim.interpolate({
-    inputRange: [0, 0.5, 1, 1.8, 2],
-    outputRange: [0, 1, 1, 1, 0],
-  });
-
-  return (
-    <View style={styles.container} pointerEvents="none">
-      {/* Emoji particles */}
-      {animations.map((anim, index) => {
-        // Burst from center
-        const startX = width / 2;
-        const startY = height / 2;
-
-        // Spread across the entire screen
-        const angle = (index / PARTICLES) * Math.PI * 2 + (Math.random() - 0.5) * 0.5;
-        const distance = (Math.random() * 0.4 + 0.3) * Math.max(width, height);
-        const endX = startX + Math.cos(angle) * distance;
-        const endY = startY + Math.sin(angle) * distance;
-
-        const translateX = anim.interpolate({
-          inputRange: [0, 1],
-          outputRange: [startX, endX],
-        });
-
-        const translateY = anim.interpolate({
-          inputRange: [0, 1],
-          outputRange: [startY, endY],
-        });
-
-        const opacity = anim.interpolate({
-          inputRange: [0, 0.2, 0.7, 1],
-          outputRange: [0, 1, 1, 0],
-        });
-
-        const rotation = anim.interpolate({
-          inputRange: [0, 1],
-          outputRange: ['0deg', `${(Math.random() - 0.5) * 1080}deg`],
-        });
-
-        const scale = anim.interpolate({
-          inputRange: [0, 0.15, 0.5, 1],
-          outputRange: [0, Math.random() * 1.2 + 1, Math.random() * 0.8 + 0.8, 0.3],
-        });
-
-        const emoji = EMOJIS[index % EMOJIS.length];
-
-        return (
-          <Animated.Text
-            key={index}
-            style={[
-              styles.particle,
-              {
-                transform: [{ translateX }, { translateY }, { rotate: rotation }, { scale }],
-                opacity,
-              },
-            ]}
-          >
-            {emoji}
-          </Animated.Text>
-        );
-      })}
-
-      {/* Congratulation Banner */}
-      <Animated.View
-        style={[
-          styles.bannerContainer,
-          {
-            transform: [{ scale: bannerScale }],
-            opacity: bannerOpacity,
-          },
-        ]}
-      >
-        <Text style={styles.bannerEmoji}>🤲</Text>
-        <Text style={styles.bannerTitle}>{t('goalCompleteTitle')}</Text>
-        <Text style={styles.bannerSubtitle}>{t('goalCompleteSubtitle')}</Text>
-      </Animated.View>
-    </View>
-  );
+interface Particle {
+  id: number
+  x: number
+  y: number
+  vx: number
+  vy: number
+  color: string
+  life: number
+  size: number
 }
 
-const getStyles = (colors: ThemeColors) => StyleSheet.create({
-  container: {
-    ...StyleSheet.absoluteFillObject,
-    zIndex: 999,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  particle: {
-    position: 'absolute',
-    fontSize: 30,
-    top: 0,
-    left: 0,
-    marginLeft: -15, // Offset half width so origin is mathematical center
-    marginTop: -15,  // Offset half height
-  },
-  bannerContainer: {
-    backgroundColor: colors.secondary + 'E6', // 90% opacity
-    paddingHorizontal: 32,
-    paddingVertical: 24,
-    borderRadius: 20,
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: colors.primary + '99',
-    shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.5,
-    shadowRadius: 20,
-    elevation: 15,
-  },
-  bannerEmoji: {
-    fontSize: 48,
-    marginBottom: 8,
-  },
-  bannerTitle: {
-    fontSize: 32,
-    fontWeight: '700',
-    color: colors.primaryLight,
-    marginBottom: 4,
-  },
-  bannerSubtitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.text,
-    opacity: 0.9,
-  },
-});
+interface FireworksProps {
+  onComplete?: () => void
+}
+
+const COLORS = ['#C9A84C', '#E8D48B', '#2ECC71', '#E74C3C', '#F39C12', '#4A90D9', '#FFFFFF']
+
+export default function Fireworks({ onComplete }: FireworksProps) {
+  const [particles, setParticles] = useState<Particle[]>([])
+  const [show, setShow] = useState(true)
+
+  const burst = useCallback((cx: number, cy: number) => {
+    const newParticles: Particle[] = []
+    for (let i = 0; i < 30; i++) {
+      const angle = (Math.PI * 2 * i) / 30 + (Math.random() - 0.5) * 0.3
+      const speed = 2 + Math.random() * 4
+      newParticles.push({
+        id: Date.now() + i + Math.random(),
+        x: cx,
+        y: cy,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        color: COLORS[Math.floor(Math.random() * COLORS.length)],
+        life: 1,
+        size: 2 + Math.random() * 3,
+      })
+    }
+    setParticles((prev) => [...prev, ...newParticles])
+  }, [])
+
+  useEffect(() => {
+    const w = typeof window !== 'undefined' ? window.innerWidth : 400
+    const h = typeof window !== 'undefined' ? window.innerHeight : 600
+    burst(w * 0.5, h * 0.4)
+    setTimeout(() => burst(w * 0.3, h * 0.3), 200)
+    setTimeout(() => burst(w * 0.7, h * 0.35), 400)
+    setTimeout(() => burst(w * 0.5, h * 0.5), 600)
+  }, [burst])
+
+  useEffect(() => {
+    if (particles.length === 0) return
+    const interval = setInterval(() => {
+      setParticles((prev) => {
+        const next = prev
+          .map((p) => ({
+            ...p,
+            x: p.x + p.vx,
+            y: p.y + p.vy,
+            vy: p.vy + 0.05,
+            life: p.life - 0.02,
+          }))
+          .filter((p) => p.life > 0)
+        if (next.length === 0) {
+          clearInterval(interval)
+          setTimeout(() => setShow(false), 300)
+        }
+        return next
+      })
+    }, 20)
+    return () => clearInterval(interval)
+  }, [particles.length])
+
+  useEffect(() => {
+    if (!show && onComplete) {
+      onComplete()
+    }
+  }, [show, onComplete])
+
+  if (!show) return null
+
+  return (
+    <div
+      style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 9999,
+        pointerEvents: 'none',
+        overflow: 'hidden',
+      }}
+    >
+      {particles.map((p) => (
+        <div
+          key={p.id}
+          style={{
+            position: 'absolute',
+            left: p.x,
+            top: p.y,
+            width: p.size,
+            height: p.size,
+            borderRadius: '50%',
+            backgroundColor: p.color,
+            opacity: Math.max(0, p.life),
+            transform: 'translate(-50%, -50%)',
+          }}
+        />
+      ))}
+    </div>
+  )
+}

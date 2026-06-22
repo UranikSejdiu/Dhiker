@@ -37,13 +37,23 @@ const loading = ref(false)
 
 const localTotal = ref(0)
 const localDaily = ref(0)
+const dhikrCounts = ref({})
+
+function initCounts() {
+  const map = {}
+  for (const d of props.dhikrs) {
+    map[d.id] = { total_count: d.total_count, daily_count: d.daily_count }
+  }
+  dhikrCounts.value = map
+}
 
 const selectedDhikr = computed(() => props.dhikrs.find(d => d.id === selectedId.value) || null)
 
 function loadLocal() {
-  if (selectedDhikr.value) {
-    localTotal.value = selectedDhikr.value.total_count || 0
-    localDaily.value = selectedDhikr.value.daily_count || 0
+  if (selectedId.value && dhikrCounts.value[selectedId.value]) {
+    const c = dhikrCounts.value[selectedId.value]
+    localTotal.value = c.total_count || 0
+    localDaily.value = c.daily_count || 0
   } else {
     localTotal.value = 0
     localDaily.value = 0
@@ -53,6 +63,7 @@ function loadLocal() {
 watch(selectedId, loadLocal, { immediate: true })
 
 onMounted(() => {
+  initCounts()
   if (props.dhikrs.length > 0) {
     selectedId.value = props.dhikrs[0].id
   }
@@ -64,10 +75,22 @@ onMounted(() => {
   }, 100)
 
   document.addEventListener('visibilitychange', onVisibilityChange)
+
+  const userId = usePage().props.auth.user.id
+  window.Echo.private('user.' + userId)
+    .listen('.DhikrCountUpdated', (e) => {
+      dhikrCounts.value[e.id] = { total_count: e.total_count, daily_count: e.daily_count }
+      if (selectedId.value === e.id) {
+        localTotal.value = e.total_count
+        localDaily.value = e.daily_count
+      }
+    })
 })
 
 onUnmounted(() => {
   document.removeEventListener('visibilitychange', onVisibilityChange)
+  const userId = usePage().props.auth.user.id
+  window.Echo.leave('user.' + userId)
 })
 
 function onVisibilityChange() {
@@ -305,9 +328,9 @@ const logout = () => {
               </div>
             </div>
             <div :style="{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }">
-              <span :style="{ color: colors.textMuted, fontSize: '12px' }">{{ t('total') }} {{ d.total_count }}</span>
+              <span :style="{ color: colors.textMuted, fontSize: '12px' }">{{ t('total') }} {{ dhikrCounts[d.id]?.total_count ?? d.total_count }}</span>
               <span v-if="d.daily_limit !== null" :style="{ color: colors.primary, fontSize: '14px', fontWeight: '600' }">
-                {{ d.daily_count }}/{{ d.daily_limit }}
+                {{ dhikrCounts[d.id]?.daily_count ?? d.daily_count }}/{{ d.daily_limit }}
               </span>
             </div>
             <div v-if="d.daily_limit !== null" :style="{ height: '4px', backgroundColor: colors.border, borderRadius: '2px', overflow: 'hidden', marginTop: '10px' }">
@@ -316,8 +339,8 @@ const logout = () => {
                   height: '100%',
                   borderRadius: '2px',
                   transition: 'width 0.3s',
-                  width: Math.min((d.daily_count || 0) / d.daily_limit * 100, 100) + '%',
-                  backgroundColor: d.daily_count >= d.daily_limit ? colors.success : colors.primary
+                  width: Math.min(((dhikrCounts[d.id]?.daily_count ?? d.daily_count) || 0) / d.daily_limit * 100, 100) + '%',
+                  backgroundColor: (dhikrCounts[d.id]?.daily_count ?? d.daily_count) >= d.daily_limit ? colors.success : colors.primary
                 }"
               />
             </div>

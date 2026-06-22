@@ -222,13 +222,13 @@ export default function CounterScreen() {
         <>
           {/* Top Navigation */}
           <View style={styles.topBar}>
-            <TouchableOpacity style={styles.navButton} onPress={() => cycleDhikr('prev')}>
+            <TouchableOpacity style={styles.navButton} onPress={() => cycleDhikr('next')}>
               <Text style={styles.navIcon}>‹</Text>
             </TouchableOpacity>
             <View style={styles.dhikrNameContainer}>
               <Text style={styles.dhikrName} numberOfLines={3}>{selectedDhikr.name}</Text>
             </View>
-            <TouchableOpacity style={styles.navButton} onPress={() => cycleDhikr('next')}>
+            <TouchableOpacity style={styles.navButton} onPress={() => cycleDhikr('prev')}>
               <Text style={styles.navIcon}>›</Text>
             </TouchableOpacity>
           </View>

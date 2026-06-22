@@ -45,6 +45,7 @@ const DhikrContext = createContext<DhikrContextType | undefined>(undefined);
 
 const DHIKR_CACHE_KEY = '@dhikr_list_cache';
 const DHIKR_PENDING_KEY = '@dhikr_pending_deltas';
+const SELECTED_DHIKR_KEY = '@dhikr_selected_id';
 
 function getTodayDate(): string {
   return new Date().toISOString().split('T')[0];
@@ -283,6 +284,12 @@ export function DhikrProvider({ children }: { children: ReactNode }) {
           });
         }
 
+        // Restore last selected dhikr
+        const savedSelectedId = await AsyncStorage.getItem(`${SELECTED_DHIKR_KEY}_${user.id}`);
+        if (savedSelectedId) {
+          setSelectedDhikrId(savedSelectedId);
+        }
+
         // Run startup sync for any left-over deltas
         await syncAllPendingImmediate();
       } catch (err) {
@@ -406,7 +413,10 @@ export function DhikrProvider({ children }: { children: ReactNode }) {
 
   const selectDhikr = useCallback((id: string | null) => {
     setSelectedDhikrId(id);
-  }, []);
+    if (user && id) {
+      AsyncStorage.setItem(`${SELECTED_DHIKR_KEY}_${user.id}`, id).catch(() => {});
+    }
+  }, [user]);
 
   const addDhikr = useCallback(async (name: string, dailyLimit?: number | null) => {
     if (!user) return;

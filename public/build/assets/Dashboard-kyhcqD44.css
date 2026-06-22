@@ -1,0 +1,1 @@
+body{-webkit-user-select:none;-moz-user-select:none;user-select:none}input,textarea,[contenteditable]{-webkit-user-select:text;-moz-user-select:text;user-select:text}@keyframes slideUp{0%{transform:translateY(100%)}to{transform:translateY(0)}}

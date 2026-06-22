@@ -2,7 +2,7 @@
     "$schema": "https://www.schemastore.org/package.json",
     "private": true,
     "type": "module",
-    "version": "1.0.12",
+    "version": "1.0.11",
     "scripts": {
         "build": "node bump-version.js && vite build",
         "dev": "vite"

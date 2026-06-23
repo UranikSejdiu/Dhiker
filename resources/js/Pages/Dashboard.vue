@@ -1,6 +1,7 @@
 <script setup>
 import { Head, router, usePage } from '@inertiajs/vue3'
 import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
+import { VueDraggable } from 'vue-draggable-plus'
 import Fireworks from '../Components/Fireworks.vue'
 import { APP_VERSION } from '../constants/version'
 import FlagIcon from '../Components/FlagIcon.vue'
@@ -8,6 +9,9 @@ import { useLanguage } from '../composables/useLanguage'
 import { useTheme } from '../composables/useTheme'
 import { useSync } from '../composables/useSync'
 import { useOrder } from '../composables/useOrder'
+import { Button } from '@/components/ui/button'
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
 
 const LANGUAGES_LIST = [
   { code: 'en', name: 'English', countryCode: 'gb' },
@@ -36,6 +40,10 @@ const modalName = ref('')
 const modalLimit = ref('')
 const modalError = ref('')
 const confirmAction = ref(null)
+const confirmDialogOpen = computed({
+  get: () => confirmAction.value !== null,
+  set: (v) => { if (!v) confirmAction.value = null }
+})
 const fadeRef = ref(null)
 const loading = ref(false)
 
@@ -52,36 +60,26 @@ const localDaily = computed(() => {
   return 0
 })
 
-const dhikrOrderIds = ref([])
-
-const localDhikrs = computed(() => {
-  const byId = {}
-  for (const d of props.dhikrs) byId[d.id] = d
-  const ordered = []
-  const seen = new Set()
-  for (const id of dhikrOrderIds.value) {
-    if (byId[id] && !seen.has(id)) {
-      ordered.push(byId[id])
-      seen.add(id)
-    }
-  }
-  for (const d of props.dhikrs) {
-    if (!seen.has(d.id)) ordered.push(d)
-  }
-  return ordered
-})
+const localDhikrs = ref([])
 
 const selectedDhikr = computed(() => localDhikrs.value.find(d => d.id === selectedId.value) || null)
-
-const dragIndex = ref(null)
-const dragOverIndex = ref(null)
 
 onMounted(() => {
   sync.loadFromServer(props.dhikrs)
   sync.loadFromStorage()
-  const initialOrder = order.loadOrderFromServer(props.dhikrs)
-  dhikrOrderIds.value = order.loadOrderFromStorage(initialOrder)
-  order.persistOrder(dhikrOrderIds.value)
+  const savedOrder = order.loadOrderFromStorage(order.loadOrderFromServer(props.dhikrs))
+  const byId = {}
+  for (const d of props.dhikrs) byId[d.id] = d
+  const ordered = []
+  const seen = new Set()
+  for (const id of savedOrder) {
+    if (byId[id] && !seen.has(id)) { ordered.push(byId[id]); seen.add(id) }
+  }
+  for (const d of props.dhikrs) {
+    if (!seen.has(d.id)) ordered.push(d)
+  }
+  localDhikrs.value = ordered
+  order.persistOrder(ordered.map(d => d.id))
   if (localDhikrs.value.length > 0) {
     selectedId.value = localDhikrs.value[0].id
   }
@@ -105,7 +103,7 @@ onUnmounted(() => {
   window.removeEventListener('focus', onFocus)
   if (fadeTimer) clearTimeout(fadeTimer)
   sync.syncBeforeUnload()
-  order.syncOrderBeforeUnload(dhikrOrderIds.value)
+  order.syncOrderBeforeUnload(localDhikrs.value.map(d => d.id))
 })
 
 function onVisibilityChange() {
@@ -116,7 +114,7 @@ function onVisibilityChange() {
 
 function onBeforeUnload() {
   sync.syncBeforeUnload()
-  order.syncOrderBeforeUnload(dhikrOrderIds.value)
+  order.syncOrderBeforeUnload(localDhikrs.value.map(d => d.id))
 }
 
 function onOnline() {
@@ -157,59 +155,10 @@ const cycle = (dir) => {
   selectedId.value = localDhikrs.value[next].id
 }
 
-function moveItem(from, to) {
-  const list = [...dhikrOrderIds.value]
-  const [moved] = list.splice(from, 1)
-  list.splice(to, 0, moved)
-  dhikrOrderIds.value = list
-  order.persistOrder(list)
-  order.scheduleSync(list)
-}
-
-function onDragStart(index) {
-  dragIndex.value = index
-}
-
-function onDragOver(index) {
-  dragOverIndex.value = index
-}
-
 function onDragEnd() {
-  if (dragIndex.value !== null && dragOverIndex.value !== null && dragIndex.value !== dragOverIndex.value) {
-    moveItem(dragIndex.value, dragOverIndex.value)
-  }
-  dragIndex.value = null
-  dragOverIndex.value = null
-}
-
-let touchStartY = 0
-const touchDragIndex = ref(null)
-
-function onTouchStart(index, event) {
-  touchDragIndex.value = index
-  touchStartY = event.touches[0].clientY
-}
-
-function onTouchMove(event) {
-  if (touchDragIndex.value === null) return
-  const touchY = event.touches[0].clientY
-  const cards = document.querySelectorAll('[data-dhikr-index]')
-  for (let i = 0; i < cards.length; i++) {
-    const r = cards[i].getBoundingClientRect()
-    if (touchY >= r.top && touchY <= r.bottom) {
-      dragOverIndex.value = i
-      break
-    }
-  }
-}
-
-function onTouchEnd() {
-  if (touchDragIndex.value !== null && dragOverIndex.value !== null && touchDragIndex.value !== dragOverIndex.value) {
-    moveItem(touchDragIndex.value, dragOverIndex.value)
-  }
-  touchDragIndex.value = null
-  dragIndex.value = null
-  dragOverIndex.value = null
+  const orderIds = localDhikrs.value.map(d => d.id)
+  order.persistOrder(orderIds)
+  order.scheduleSync(orderIds)
 }
 
 const increment = () => {
@@ -367,241 +316,187 @@ const logout = () => {
     </template>
 
     <!-- Toolbar -->
-    <div :style="{ position: 'fixed', bottom: 0, left: 0, right: 0, display: 'flex', justifyContent: 'center', padding: '8px 0 max(env(safe-area-inset-bottom, 20px), 20px)', pointerEvents: 'none', zIndex: 10 }">
-      <div :style="{ display: 'flex', alignItems: 'center', backgroundColor: colors.surface, border: `1px solid ${colors.border}`, borderRadius: '32px', padding: '10px 8px', boxShadow: '0 2px 8px rgba(0,0,0,0.3)', pointerEvents: 'auto' }">
-        <div :style="{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '0 22px', gap: '4px' }">
-          <button @click="resetDaily" :style="{ width: '48px', height: '48px', borderRadius: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: colors.textSecondary, fontSize: '20px', background: 'none', border: 'none', cursor: 'pointer' }"><i class="fi fi-rr-refresh"></i></button>
-          <span :style="{ color: colors.textMuted, fontSize: '10px', fontWeight: '500', textAlign: 'center' }">{{ t('resetLabel') }}</span>
+    <div class="fixed bottom-0 left-0 right-0 flex justify-center pointer-events-none z-10" :style="{ padding: '8px 0 max(env(safe-area-inset-bottom, 20px), 20px)' }">
+      <div class="flex items-center rounded-full p-2.5 pointer-events-auto" :style="{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)', boxShadow: '0 2px 8px rgba(0,0,0,0.3)' }">
+        <div class="flex flex-col items-center px-5 gap-1">
+          <Button variant="ghost" size="icon" @click="resetDaily"><i class="fi fi-rr-refresh"></i></Button>
+          <span class="text-[10px] font-medium text-center text-muted-foreground">{{ t('resetLabel') }}</span>
         </div>
-        <div :style="{ width: '1px', height: '32px', backgroundColor: colors.border, opacity: 0.5 }"></div>
-        <div :style="{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '0 22px', gap: '4px' }">
-          <button @click="showDhikrsPanel = true" :style="{ width: '48px', height: '48px', borderRadius: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: colors.textSecondary, fontSize: '20px', background: 'none', border: 'none', cursor: 'pointer' }"><i class="fi fi-rr-menu-burger"></i></button>
-          <span :style="{ color: colors.textMuted, fontSize: '10px', fontWeight: '500', textAlign: 'center' }">{{ t('dhikrsLabel') }}</span>
+        <div class="w-px h-8" :style="{ backgroundColor: 'var(--border)', opacity: 0.5 }"></div>
+        <div class="flex flex-col items-center px-5 gap-1">
+          <Button variant="ghost" size="icon" @click="showDhikrsPanel = true"><i class="fi fi-rr-menu-burger"></i></Button>
+          <span class="text-[10px] font-medium text-center text-muted-foreground">{{ t('dhikrsLabel') }}</span>
         </div>
-        <div :style="{ width: '1px', height: '32px', backgroundColor: colors.border, opacity: 0.5 }"></div>
-        <div :style="{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '0 22px', gap: '4px' }">
-          <button @click="showSettingsPanel = true" :style="{ width: '48px', height: '48px', borderRadius: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: colors.textSecondary, fontSize: '20px', background: 'none', border: 'none', cursor: 'pointer' }"><i class="fi fi-rr-settings"></i></button>
-          <span :style="{ color: colors.textMuted, fontSize: '10px', fontWeight: '500', textAlign: 'center' }">{{ t('settingsLabel') }}</span>
+        <div class="w-px h-8" :style="{ backgroundColor: 'var(--border)', opacity: 0.5 }"></div>
+        <div class="flex flex-col items-center px-5 gap-1">
+          <Button variant="ghost" size="icon" @click="showSettingsPanel = true"><i class="fi fi-rr-settings"></i></Button>
+          <span class="text-[10px] font-medium text-center text-muted-foreground">{{ t('settingsLabel') }}</span>
         </div>
       </div>
     </div>
 
     <!-- Dhikrs Panel (bottom sheet) -->
-    <div v-if="showDhikrsPanel" :style="{ position: 'fixed', inset: 0, backgroundColor: colors.overlay, zIndex: 100, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }" @click="showDhikrsPanel = false">
-      <div :style="{ backgroundColor: colors.surface, borderTopLeftRadius: '24px', borderTopRightRadius: '24px', maxHeight: '85vh', borderTop: `1px solid ${colors.border}`, animation: 'slideUp 0.3s ease', display: 'flex', flexDirection: 'column' }" @click.stop>
-        <div :style="{ display: 'flex', justifyContent: 'center', padding: '12px 0 4px' }">
-          <div :style="{ width: '40px', height: '4px', backgroundColor: `${colors.textSecondary}80`, borderRadius: '2px' }"></div>
-        </div>
-        <div :style="{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 24px', borderBottom: `1px solid ${colors.border}` }">
-          <div :style="{ color: colors.text, fontSize: '22px', fontWeight: '700' }">{{ t('myDhikrs') }}</div>
-          <button @click="openCreateModal" :style="{ backgroundColor: colors.surfaceLight, padding: '8px 16px', borderRadius: '20px', border: `1px solid ${colors.border}`, color: colors.primary, fontWeight: '600', fontSize: '14px', cursor: 'pointer' }">{{ t('newBtn') }}</button>
-        </div>
-        <div :style="{ padding: '16px', overflowY: 'auto', flex: 1 }">
-          <div v-if="localDhikrs.length === 0" :style="{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '48px 0 32px' }">
-            <div :style="{ fontSize: '40px', color: colors.textMuted, marginBottom: '12px', opacity: 0.5 }"><i class="fi fi-rr-menu-burger"></i></div>
-            <div :style="{ color: colors.textSecondary, fontSize: '16px', fontWeight: '600', marginBottom: '4px' }">{{ t('noDhikrsAdded') }}</div>
-            <div :style="{ color: colors.textMuted, fontSize: '13px' }">{{ t('tapNewToCreate') }}</div>
+    <Sheet v-model:open="showDhikrsPanel">
+      <SheetContent side="bottom" class="max-h-[85vh] px-4 pb-8">
+        <SheetHeader class="text-left px-0">
+          <div class="flex items-center justify-between w-full pr-8">
+            <SheetTitle>{{ t('myDhikrs') }}</SheetTitle>
+            <Button size="sm" @click.stop="openCreateModal">{{ t('newBtn') }}</Button>
           </div>
-          <div
-            v-for="(d, di) in localDhikrs"
-            :key="d.id"
-            :data-dhikr-index="di"
-            draggable="true"
-            @click="selectedId = d.id; showDhikrsPanel = false"
-            @dragstart.prevent="onDragStart(di)"
-            @dragover.prevent="onDragOver(di)"
-            @dragend="onDragEnd"
-            :style="{
-              backgroundColor: dragOverIndex === di && dragIndex !== null && dragIndex !== di ? colors.surface : colors.surfaceLight,
-              borderRadius: '14px', padding: '16px',
-              border: `1px solid ${d.id === selectedId ? colors.primary + '60' : colors.border}`,
-              marginBottom: '12px', cursor: 'pointer',
-              transition: 'background-color 0.15s',
-              opacity: touchDragIndex === di ? 0.5 : dragIndex === di ? 0.5 : 1,
-            }"
-          >
-            <div :style="{ display: 'flex', alignItems: 'center', gap: '10px' }">
-              <button
-                @click.stop
-                @mousedown.stop
-                @touchstart.prevent.stop="onTouchStart(di, $event)"
-                @touchmove.prevent="onTouchMove"
-                @touchend.prevent="onTouchEnd"
-                :style="{ color: colors.textMuted, fontSize: '18px', padding: '4px 2px', background: 'none', border: 'none', cursor: 'grab', lineHeight: 1, userSelect: 'none', touchAction: 'none' }"
-              >⠿</button>
-              <div :style="{ color: colors.text, fontSize: '18px', fontWeight: '600', flex: 1, overflow: 'hidden' }">{{ d.name }}</div>
-              <div :style="{ display: 'flex', gap: '4px' }">
-                <button @click.stop="openEditModal(d)" :style="{ padding: '6px', color: colors.textSecondary, fontSize: '18px', background: 'none', border: 'none', cursor: 'pointer' }"><i class="fi fi-rr-edit"></i></button>
-                <button @click.stop="deleteDhikr(d.id, d.name)" :style="{ padding: '6px', color: colors.error, fontSize: '18px', background: 'none', border: 'none', cursor: 'pointer' }"><i class="fi fi-rr-trash"></i></button>
+        </SheetHeader>
+
+        <template v-if="localDhikrs.length === 0">
+          <div class="flex flex-col items-center py-12">
+            <i class="fi fi-rr-menu-burger text-4xl text-muted-foreground/50 mb-3"></i>
+            <p class="text-base font-semibold text-muted-foreground">{{ t('noDhikrsAdded') }}</p>
+            <p class="text-sm text-muted-foreground/70">{{ t('tapNewToCreate') }}</p>
+          </div>
+        </template>
+
+        <VueDraggable v-model="localDhikrs" handle=".drag-handle" ghost-class="opacity-40" :animation="200" @end="onDragEnd" class="space-y-3" v-else>
+          <div v-for="d in localDhikrs" :key="d.id" class="rounded-xl p-4 bg-muted cursor-pointer" :style="{ border: `1px solid ${d.id === selectedId ? colors.primary + '60' : 'var(--border)'}` }" @click="selectedId = d.id; showDhikrsPanel = false">
+            <div class="flex items-center gap-2.5">
+              <button class="drag-handle text-muted-foreground text-lg leading-none cursor-grab active:cursor-grabbing select-none" :style="{ touchAction: 'none' }">⠿</button>
+              <div class="text-foreground text-lg font-semibold flex-1 truncate">{{ d.name }}</div>
+              <div class="flex gap-1">
+                <Button variant="ghost" size="icon-xs" @click.stop="openEditModal(d)"><i class="fi fi-rr-edit"></i></Button>
+                <Button variant="ghost" size="icon-xs" :style="{ color: 'var(--error)' }" @click.stop="deleteDhikr(d.id, d.name)"><i class="fi fi-rr-trash"></i></Button>
               </div>
             </div>
-            <div :style="{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '8px' }">
-              <span :style="{ color: colors.textMuted, fontSize: '12px' }">{{ t('total') }} {{ sync.dhikrCounts.value[d.id]?.total_count ?? d.total_count }}</span>
-              <span v-if="d.daily_limit !== null" :style="{ color: colors.primary, fontSize: '14px', fontWeight: '600' }">
+            <div class="flex justify-between items-center mt-2">
+              <span class="text-xs text-muted-foreground">{{ t('total') }} {{ sync.dhikrCounts.value[d.id]?.total_count ?? d.total_count }}</span>
+              <span v-if="d.daily_limit !== null" class="text-sm font-semibold" :style="{ color: 'var(--primary)' }">
                 {{ sync.dhikrCounts.value[d.id]?.daily_count ?? d.daily_count }}/{{ d.daily_limit }}
               </span>
             </div>
-            <div v-if="d.daily_limit !== null" :style="{ height: '4px', backgroundColor: colors.border, borderRadius: '2px', overflow: 'hidden', marginTop: '10px' }">
+            <div v-if="d.daily_limit !== null" class="h-1 rounded-full overflow-hidden mt-2.5" :style="{ backgroundColor: 'var(--border)' }">
               <div
                 :style="{
-                  height: '100%',
-                  borderRadius: '2px',
-                  transition: 'width 0.3s',
+                  height: '100%', borderRadius: '999px', transition: 'width 0.3s',
                   width: Math.min(((sync.dhikrCounts.value[d.id]?.daily_count ?? d.daily_count) || 0) / d.daily_limit * 100, 100) + '%',
-                  backgroundColor: (sync.dhikrCounts.value[d.id]?.daily_count ?? d.daily_count) >= d.daily_limit ? colors.success : colors.primary
+                  backgroundColor: (sync.dhikrCounts.value[d.id]?.daily_count ?? d.daily_count) >= d.daily_limit ? 'var(--success)' : 'var(--primary)'
                 }"
               />
             </div>
           </div>
-          <div :style="{ height: '32px' }" />
-        </div>
-      </div>
-    </div>
+        </VueDraggable>
+        <div class="h-8"></div>
+      </SheetContent>
+    </Sheet>
 
     <!-- Settings Panel (bottom sheet) -->
-    <div v-if="showSettingsPanel" :style="{ position: 'fixed', inset: 0, backgroundColor: colors.overlay, zIndex: 100, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }" @click="showSettingsPanel = false">
-      <div :style="{ backgroundColor: colors.surface, borderTopLeftRadius: '24px', borderTopRightRadius: '24px', maxHeight: '85vh', borderTop: `1px solid ${colors.border}`, animation: 'slideUp 0.3s ease', display: 'flex', flexDirection: 'column' }" @click.stop>
-        <div :style="{ display: 'flex', justifyContent: 'center', padding: '12px 0 4px' }">
-          <div :style="{ width: '40px', height: '4px', backgroundColor: `${colors.textSecondary}80`, borderRadius: '2px' }"></div>
-        </div>
-        <div :style="{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 24px', borderBottom: `1px solid ${colors.border}` }">
-          <div :style="{ color: colors.text, fontSize: '22px', fontWeight: '700' }">{{ t('settings') }}</div>
-          <button @click="showSettingsPanel = false" :style="{ color: colors.textSecondary, fontSize: '20px', padding: '4px', background: 'none', border: 'none', cursor: 'pointer' }"><i class="fi fi-rr-cross-small"></i></button>
-        </div>
-        <div :style="{ padding: '24px', overflowY: 'auto', flex: 1 }">
+    <Sheet v-model:open="showSettingsPanel">
+      <SheetContent side="bottom" class="max-h-[85vh] px-4 pb-8">
+        <SheetHeader class="text-left px-0">
+          <SheetTitle>{{ t('settings') }}</SheetTitle>
+        </SheetHeader>
+        <div class="overflow-y-auto flex-1 space-y-6">
+
           <!-- Account Section -->
-          <div :style="{ color: colors.textSecondary, fontSize: '12px', fontWeight: '600', letterSpacing: '1px', marginBottom: '8px', marginLeft: '4px' }">{{ t('accountSection') }}</div>
-          <div :style="{ backgroundColor: colors.surfaceLight, borderRadius: '14px', border: `1px solid ${colors.border}`, overflow: 'hidden', marginBottom: '24px' }">
-            <div :style="{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px' }">
-              <span :style="{ color: colors.text, fontSize: '15px' }">{{ t('name') }}</span>
-              <span :style="{ color: colors.textSecondary, fontSize: '15px', maxWidth: '55%', textAlign: 'right' }">{{ $page.props.auth.user.name }}</span>
+          <p class="text-xs font-semibold tracking-wider text-muted-foreground ml-1">{{ t('accountSection') }}</p>
+          <div class="rounded-xl bg-muted border border-border overflow-hidden">
+            <div class="flex justify-between items-center p-4">
+              <span class="text-sm text-foreground">{{ t('name') }}</span>
+              <span class="text-sm text-muted-foreground max-w-[55%] text-right">{{ $page.props.auth.user.name }}</span>
             </div>
-            <div :style="{ height: '1px', backgroundColor: colors.border, marginLeft: '16px' }"></div>
-            <div :style="{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px' }">
-              <span :style="{ color: colors.text, fontSize: '15px' }">{{ t('email') }}</span>
-              <span :style="{ color: colors.textSecondary, fontSize: '15px', maxWidth: '55%', textAlign: 'right' }">{{ $page.props.auth.user.email }}</span>
+            <div class="h-px bg-border ml-4"></div>
+            <div class="flex justify-between items-center p-4">
+              <span class="text-sm text-foreground">{{ t('email') }}</span>
+              <span class="text-sm text-muted-foreground max-w-[55%] text-right">{{ $page.props.auth.user.email }}</span>
             </div>
           </div>
 
           <!-- Appearance Section -->
-          <div :style="{ color: colors.textSecondary, fontSize: '12px', fontWeight: '600', letterSpacing: '1px', marginBottom: '8px', marginLeft: '4px' }">{{ t('appearanceSection') }}</div>
-          <div :style="{ backgroundColor: colors.surfaceLight, borderRadius: '14px', border: `1px solid ${colors.border}`, overflow: 'hidden', marginBottom: '24px' }">
-            <div :style="{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px' }">
-              <span :style="{ color: colors.text, fontSize: '15px' }">Theme</span>
-              <div :style="{ display: 'flex', gap: '8px' }">
-                <button
-                  v-for="tn in themeNames"
-                  :key="tn"
-                  @click="setTheme(tn)"
-                  :style="{
-                    width: '32px',
-                    height: '32px',
-                    borderRadius: '16px',
-                    border: themeName === tn ? `2px solid ${colors.primary}` : '2px solid transparent',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    cursor: 'pointer',
-                    padding: 0,
-                    backgroundColor: themes[tn].background
-                  }"
-                >
-                  <div :style="{ width: '14px', height: '14px', borderRadius: '7px', backgroundColor: themes[tn].primary }" />
+          <p class="text-xs font-semibold tracking-wider text-muted-foreground ml-1">{{ t('appearanceSection') }}</p>
+          <div class="rounded-xl bg-muted border border-border overflow-hidden">
+            <div class="flex justify-between items-center p-4">
+              <span class="text-sm text-foreground">Theme</span>
+              <div class="flex gap-2">
+                <button v-for="tn in themeNames" :key="tn" @click="setTheme(tn)" class="w-8 h-8 rounded-full flex items-center justify-center cursor-pointer p-0" :style="{ border: `2px solid ${themeName === tn ? colors.primary : 'transparent'}`, backgroundColor: themes[tn].background }">
+                  <div class="w-3.5 h-3.5 rounded-full" :style="{ backgroundColor: themes[tn].primary }"></div>
                 </button>
               </div>
             </div>
           </div>
 
           <!-- Language Section -->
-          <div :style="{ color: colors.textSecondary, fontSize: '12px', fontWeight: '600', letterSpacing: '1px', marginBottom: '8px', marginLeft: '4px' }">{{ t('languageSection') }}</div>
-          <div :style="{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginBottom: '24px' }">
-            <button
-              v-for="l in LANGUAGES_LIST"
-              :key="l.code"
-              @click="setLanguage(l.code)"
-              :style="{
-                display: 'flex',
-                alignItems: 'center',
-                backgroundColor: language === l.code ? colors.surface : colors.surfaceLight,
-                border: `1px solid ${language === l.code ? colors.primary : colors.border}`,
-                borderRadius: '20px',
-                padding: '10px 16px',
-                gap: '8px',
-                cursor: 'pointer'
-              }"
-            >
+          <p class="text-xs font-semibold tracking-wider text-muted-foreground ml-1">{{ t('languageSection') }}</p>
+          <div class="flex flex-wrap gap-2.5">
+            <button v-for="l in LANGUAGES_LIST" :key="l.code" @click="setLanguage(l.code)" class="flex items-center gap-2 rounded-full px-4 py-2.5 cursor-pointer text-sm font-semibold" :style="{ backgroundColor: language === l.code ? 'var(--surface)' : 'var(--surface-light)', border: `1px solid ${language === l.code ? colors.primary : 'var(--border)'}` }">
               <FlagIcon :countryCode="l.countryCode" :size="18" />
-              <span :style="{ color: language === l.code ? colors.primary : colors.textSecondary, fontSize: '14px', fontWeight: '600' }">{{ l.name }}</span>
+              <span :style="{ color: language === l.code ? colors.primary : colors.textSecondary }">{{ l.name }}</span>
             </button>
           </div>
 
-          <div :style="{ color: colors.textSecondary, fontSize: '12px', fontWeight: '600', letterSpacing: '1px', marginBottom: '8px', marginLeft: '4px', marginTop: '24px' }">SYNC</div>
-          <button @click="hardRefresh" :style="{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px', backgroundColor: colors.surfaceLight, borderRadius: '14px', border: `1px solid ${colors.border}`, color: colors.textSecondary, fontSize: '15px', cursor: 'pointer', textAlign: 'left' }">
-            <span>{{ t('refreshFromServer') }}</span>
-          </button>
+          <!-- Sync Section -->
+          <div>
+            <p class="text-xs font-semibold tracking-wider text-muted-foreground ml-1 mb-2">SYNC</p>
+            <Button variant="outline" class="w-full justify-between" @click="hardRefresh">
+              <span>{{ t('refreshFromServer') }}</span>
+            </Button>
+          </div>
 
-          <div :style="{ color: colors.textSecondary, fontSize: '12px', fontWeight: '600', letterSpacing: '1px', marginBottom: '8px', marginLeft: '4px', marginTop: '24px' }">{{ t('aboutSection') }}</div>
-          <div :style="{ backgroundColor: colors.surfaceLight, borderRadius: '14px', border: `1px solid ${colors.border}`, overflow: 'hidden' }">
-            <div :style="{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px' }">
-              <span :style="{ color: colors.text, fontSize: '15px' }">{{ t('version') }}</span>
-              <span :style="{ color: colors.textSecondary, fontSize: '15px' }">{{ APP_VERSION }}</span>
-            </div>
-            <div :style="{ height: '1px', backgroundColor: colors.border, marginLeft: '16px' }"></div>
-            <div :style="{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px' }">
-              <span :style="{ color: colors.text, fontSize: '15px' }">{{ t('madeBy') }}</span>
-              <span :style="{ color: colors.textSecondary, fontSize: '15px' }">Uranik Sejdiu</span>
+          <!-- About Section -->
+          <div>
+            <p class="text-xs font-semibold tracking-wider text-muted-foreground ml-1 mb-2">{{ t('aboutSection') }}</p>
+            <div class="rounded-xl bg-muted border border-border overflow-hidden">
+              <div class="flex justify-between items-center p-4">
+                <span class="text-sm text-foreground">{{ t('version') }}</span>
+                <span class="text-sm text-muted-foreground">{{ APP_VERSION }}</span>
+              </div>
+              <div class="h-px bg-border ml-4"></div>
+              <div class="flex justify-between items-center p-4">
+                <span class="text-sm text-foreground">{{ t('madeBy') }}</span>
+                <span class="text-sm text-muted-foreground">Uranik Sejdiu</span>
+              </div>
             </div>
           </div>
 
-          <button @click="logout" :style="{ width: '100%', padding: '16px', borderRadius: '14px', textAlign: 'center', border: `1px solid ${colors.error}4D`, marginTop: '32px', color: colors.error, fontSize: '16px', fontWeight: '600', cursor: 'pointer', backgroundColor: `${colors.error}1A` }">
-            {{ t('signOut') }}
-          </button>
-          <div :style="{ height: '40px' }" />
+          <div class="pt-4">
+            <Button variant="destructive" class="w-full" @click="logout">{{ t('signOut') }}</Button>
+          </div>
+          <div class="h-10"></div>
         </div>
-      </div>
-    </div>
+      </SheetContent>
+    </Sheet>
 
     <!-- Add/Edit Modal -->
-    <div v-if="showModal" :style="{ position: 'fixed', inset: 0, backgroundColor: colors.overlay, zIndex: 200, display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '24px' }" @click="showModal = false">
-      <div :style="{ backgroundColor: colors.surface, borderRadius: '20px', padding: '28px', width: '100%', maxWidth: '420px', border: `1px solid ${colors.border}` }" @click.stop>
-        <div :style="{ color: colors.text, fontSize: '22px', fontWeight: '700', marginBottom: '20px' }">{{ editingId ? t('editDhikr') : t('newDhikr') }}</div>
-        <div v-if="modalError" :style="{ color: colors.error, marginBottom: '16px', fontSize: '14px' }">{{ modalError }}</div>
-        <div :style="{ color: colors.textSecondary, fontSize: '12px', fontWeight: '600', letterSpacing: '0.5px', marginBottom: '6px', marginLeft: '4px' }">{{ t('nameLabel') }}</div>
-        <input
-          v-model="modalName"
-          :placeholder="t('namePlaceholder')"
-          :style="{ width: '100%', backgroundColor: colors.background, border: `1px solid ${colors.border}`, borderRadius: '12px', padding: '14px', color: colors.text, fontSize: '16px', marginBottom: '16px', outline: 'none' }"
-          @focus="(e) => e.target.style.borderColor = colors.primary"
-          @blur="(e) => e.target.style.borderColor = colors.border"
-          autofocus
-        />
-        <div :style="{ color: colors.textSecondary, fontSize: '12px', fontWeight: '600', letterSpacing: '0.5px', marginBottom: '6px', marginLeft: '4px' }">{{ t('limitLabel') }}</div>
-        <input
-          v-model="modalLimit"
-          type="number"
-          :placeholder="t('limitPlaceholder')"
-          :style="{ width: '100%', backgroundColor: colors.background, border: `1px solid ${colors.border}`, borderRadius: '12px', padding: '14px', color: colors.text, fontSize: '16px', marginBottom: '16px', outline: 'none' }"
-          @focus="(e) => e.target.style.borderColor = colors.primary"
-          @blur="(e) => e.target.style.borderColor = colors.border"
-        />
-        <div :style="{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '8px' }">
-          <button @click="showModal = false" :style="{ padding: '12px 20px', color: colors.textSecondary, fontWeight: '600', fontSize: '15px', background: 'none', border: 'none', cursor: 'pointer' }">{{ t('cancel') }}</button>
-          <button @click="saveDhikr" :style="{ padding: '12px 24px', borderRadius: '12px', background: `linear-gradient(135deg, ${colors.primary}, ${colors.primaryLight}, ${colors.primary})`, color: colors.background, fontWeight: '700', fontSize: '15px', border: 'none', cursor: 'pointer' }">{{ t('saveBtn') }}</button>
+    <Dialog v-model:open="showModal">
+      <DialogContent class="sm:max-w-[420px]">
+        <DialogHeader>
+          <DialogTitle>{{ editingId ? t('editDhikr') : t('newDhikr') }}</DialogTitle>
+        </DialogHeader>
+        <p v-if="modalError" class="text-sm" :style="{ color: 'var(--error)' }">{{ modalError }}</p>
+        <div class="space-y-4">
+          <div class="space-y-1.5">
+            <p class="text-xs font-semibold tracking-wider text-muted-foreground ml-1">{{ t('nameLabel') }}</p>
+            <input v-model="modalName" :placeholder="t('namePlaceholder')" class="w-full rounded-xl border border-border bg-background px-4 py-3.5 text-foreground text-base outline-none ring-0 focus:ring-2 focus:ring-ring" />
+          </div>
+          <div class="space-y-1.5">
+            <p class="text-xs font-semibold tracking-wider text-muted-foreground ml-1">{{ t('limitLabel') }}</p>
+            <input v-model="modalLimit" type="number" :placeholder="t('limitPlaceholder')" class="w-full rounded-xl border border-border bg-background px-4 py-3.5 text-foreground text-base outline-none ring-0 focus:ring-2 focus:ring-ring" />
+          </div>
         </div>
-      </div>
-    </div>
+        <div class="flex justify-end gap-3 mt-2">
+          <Button variant="ghost" @click="showModal = false">{{ t('cancel') }}</Button>
+          <Button @click="saveDhikr" :style="{ background: `linear-gradient(135deg, ${colors.primary}, ${colors.primaryLight}, ${colors.primary})`, border: 'none', color: colors.background }">{{ t('saveBtn') }}</Button>
+        </div>
+      </DialogContent>
+    </Dialog>
 
     <!-- Confirm Dialog -->
-    <div v-if="confirmAction" :style="{ position: 'fixed', inset: 0, backgroundColor: colors.overlay, zIndex: 300, display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '24px' }" @click="confirmAction = null">
-      <div :style="{ backgroundColor: colors.surface, borderRadius: '20px', padding: '28px', width: '100%', maxWidth: '360px', border: `1px solid ${colors.border}` }" @click.stop>
-        <div :style="{ color: colors.text, fontSize: '20px', fontWeight: '700', marginBottom: '12px' }">{{ confirmAction.title }}</div>
-        <div :style="{ color: colors.textSecondary, fontSize: '15px', marginBottom: '24px', lineHeight: '22px' }">{{ confirmAction.message }}</div>
-        <div :style="{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }">
-          <button @click="confirmAction = null" :style="{ padding: '12px 20px', color: colors.textSecondary, fontWeight: '600', fontSize: '15px', background: 'none', border: 'none', cursor: 'pointer' }">{{ t('cancel') }}</button>
-          <button @click="confirmAction.onConfirm" :style="{ padding: '12px 24px', borderRadius: '12px', backgroundColor: colors.error, color: '#fff', fontWeight: '700', fontSize: '15px', border: 'none', cursor: 'pointer' }">{{ t('confirm') }}</button>
+    <Dialog v-model:open="confirmDialogOpen">
+      <DialogContent class="sm:max-w-[360px]">
+        <DialogHeader>
+          <DialogTitle>{{ confirmAction?.title }}</DialogTitle>
+          <DialogDescription>{{ confirmAction?.message }}</DialogDescription>
+        </DialogHeader>
+        <div class="flex justify-end gap-3">
+          <Button variant="ghost" @click="confirmAction = null">{{ t('cancel') }}</Button>
+          <Button variant="destructive" @click="confirmAction?.onConfirm">{{ t('confirm') }}</Button>
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
 
   </div>
 </template>
@@ -615,8 +510,5 @@ input, textarea, [contenteditable] {
   -webkit-user-select: text;
   user-select: text;
 }
-@keyframes slideUp {
-  from { transform: translateY(100%); }
-  to { transform: translateY(0); }
-}
+
 </style>

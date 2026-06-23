@@ -67,19 +67,11 @@ const selectedDhikr = computed(() => localDhikrs.value.find(d => d.id === select
 onMounted(() => {
   sync.loadFromServer(props.dhikrs)
   sync.loadFromStorage()
-  const savedOrder = order.loadOrderFromStorage(order.loadOrderFromServer(props.dhikrs))
-  const byId = {}
-  for (const d of props.dhikrs) byId[d.id] = d
-  const ordered = []
-  const seen = new Set()
-  for (const id of savedOrder) {
-    if (byId[id] && !seen.has(id)) { ordered.push(byId[id]); seen.add(id) }
-  }
-  for (const d of props.dhikrs) {
-    if (!seen.has(d.id)) ordered.push(d)
-  }
-  localDhikrs.value = ordered
-  order.persistOrder(ordered.map(d => d.id))
+
+  // Server returns dhikrs sorted by sort_order — use as source of truth
+  localDhikrs.value = [...props.dhikrs]
+
+  order.persistOrder(localDhikrs.value.map(d => d.id))
   if (localDhikrs.value.length > 0) {
     selectedId.value = localDhikrs.value[0].id
   }
@@ -121,11 +113,17 @@ function onOnline() {
   if (sync.hasPending.value) {
     sync.sync()
   }
+  if (order.orderPending.value) {
+    order.syncOrder(localDhikrs.value.map(d => d.id))
+  }
 }
 
 function onFocus() {
   if (sync.hasPending.value) {
     sync.sync()
+  }
+  if (order.orderPending.value) {
+    order.syncOrder(localDhikrs.value.map(d => d.id))
   }
 }
 

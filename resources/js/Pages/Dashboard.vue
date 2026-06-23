@@ -327,7 +327,12 @@ const logout = () => {
             <div :style="{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }">
               <div :style="{ color: colors.text, fontSize: '18px', fontWeight: '600', flex: 1, marginRight: '8px', overflow: 'hidden' }">{{ d.name }}</div>
               <div :style="{ display: 'flex', gap: '4px' }">
-                <button @click.stop="openEditModal(d)" :style="{ padding: '6px', color: colors.textSecondary, fontSize: '18px', background: 'none', border: 'none', cursor: 'pointer', lineHeight: 1 }">✎</button>
+                <button @click.stop="openEditModal(d)" :style="{ padding: '6px', color: colors.textSecondary, background: 'none', border: 'none', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>
+                    <path d="m15 5 4 4"/>
+                  </svg>
+                </button>
                 <button @click.stop="deleteDhikr(d.id, d.name)" :style="{ padding: '6px', color: colors.error, fontSize: '18px', background: 'none', border: 'none', cursor: 'pointer' }"><i class="fi fi-rr-trash"></i></button>
               </div>
             </div>

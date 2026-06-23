@@ -23,5 +23,6 @@
     --input: oklch(0.922 0 0);
     --ring: oklch(0.708 0 0);
     --radius: 0.625rem;
+    --radius-md: 0.5rem;
   }
 }

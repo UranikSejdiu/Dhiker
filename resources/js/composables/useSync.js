@@ -89,7 +89,8 @@ function syncBeforeUnload() {
   }))
 
   try {
-    navigator.sendBeacon(route('dhikrs.sync'), JSON.stringify({ dhikrs: payload }))
+    const blob = new Blob([JSON.stringify({ dhikrs: payload })], { type: 'application/json' })
+    navigator.sendBeacon(route('dhikrs.sync'), blob)
     hasPending.value = false
   } catch {}
 }

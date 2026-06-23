@@ -57,8 +57,8 @@ resources/views/
 ## Key Architecture Decisions
 
 ### Sync Strategy
-- **Offline-first**: Counter taps update local refs immediately. Server POST is debounced (2s) and fire-and-forget.
-- **DB priority**: `loadFromStorage()` only fills gaps for dhikrs not in server data — never overwrites.
+- **Offline-first**: Counter taps update local refs immediately. Server POST is fire-and-forget.
+- **CSRF**: dhikrs/reorder and dhikrs/sync routes excluded from CSRF in bootstrap/app.php (sendBeacon + Axios POST).
 - **Online guards**: `sync()` checks `navigator.onLine` before requesting. `online`, `focus`, and `visibilitychange` events trigger sync when pending.
 - **Hard refresh** (`hardRefresh`): Clears localStorage `dhikr_sync`, then does `window.location.reload()`.
 
@@ -84,16 +84,18 @@ resources/views/
 - `/auth/google` + `/auth/google/callback` — Google OAuth
 
 ### UI Components (shadcn-vue)
-- **Button** — `@/components/ui/button`
-- **Dialog** — `@/components/ui/dialog` (Add/Edit modal + Confirm dialog)
-- **Sheet** — `@/components/ui/sheet` (Dhikrs list + Settings panels)
+- **Button** — `@/Components/ui/button`
+- **Dialog** — `@/Components/ui/dialog` (Add/Edit modal + Confirm dialog)
+- **Sheet** — `@/Components/ui/sheet` (Dhikrs list + Settings panels)
 - **VueDraggable** — `vue-draggable-plus` for touch+mouse reorder with `.drag-handle` selector
 
 ### Drag Reorder
 - Uses SortableJS via `vue-draggable-plus` — works on mouse + touch natively
 - Reorder handle: `.drag-handle` class on the ⠿ grip button
-- `@end` event persists order to localStorage + debounced server POST
-- Optimistic: array updates instantly, reverts on server failure
+- `@end` event persists order to localStorage + immediate server POST
+- On page load, server order (props.dhikrs sorted by sort_order) is used directly
+- LocalStorage written as cache for offline, but never overrides server order on refresh
+- Reorder uses Axios POST (not Inertia) to avoid full page render
 
 ## Session History
 
@@ -149,16 +151,35 @@ resources/views/
 - Cleaned up unused drag state refs and touch event handlers
 - Removed unused imports
 
-### Session 5b (June 23, 2026) - Order sync fixes
-
-- Removed localStorage order override on page load - server order (sort_order) is source of truth
-
-- Removed 2s debounce from order sync - sends immediately on drag end
-
+### Session 5b (June 23, 2026) — Order sync fixes
+- Removed localStorage order override on page load — server order (sort_order) is source of truth
+- Removed 2s debounce from order sync — sends immediately on drag end
 - Fixed sendBeacon to use Blob with application/json for proper Laravel parsing
-
 - Excluded dhikrs/reorder and dhikrs/sync from CSRF in bootstrap/app.php
-
 - Added order retry on online and focus events when orderPending
-
 - LocalStorage write still works as cache for offline use
+
+### Session 5c (June 23, 2026) — Dashboard polish
+- Fixed Dhikrs + Settings sheets — added overflow-y-auto scroll with flex layout
+- Enlarged navigation toolbar — p-3.5 container, icon-lg buttons, text-xl icons, text-xs labels
+- Fixed destructive buttons (sign out, confirm) with explicit :style overriding broken opacity modifiers
+- Fixed refresh button text alignment (justify-center instead of justify-between)
+
+### Session 5d (June 23, 2026) — Server is source of truth for order
+- Removed loadOrderFromStorage from onMounted — props.dhikrs already sorted by sort_order
+- Added order retry on online + focus events when orderPending
+
+### Session 5e (June 23, 2026) — Bigger buttons
+- Increased all button sizes: default h-10, sm h-9, lg h-11, more padding
+
+### Session 5f (June 23, 2026) — Fix import casing for Linux
+- Changed all @/components/ui/ imports to @/Components/ui/ for case-sensitive FS
+- Removed duplicate lowercase resources/js/components/ui/ from git index
+- Keep Breeze convention (uppercase Components/) for all paths
+
+### Session 5g (June 23, 2026) — Restore old +New button style
+- Changed +New button from default variant to explicit :style matching pre-shadcn look
+- Style: surfaceLight bg, border outline, primary text, pill shape
+
+### Session 5h (June 23, 2026) — +New button tweaks
+- Changed borderRadius from 20px to 8px, padding 10px 22px for wider button

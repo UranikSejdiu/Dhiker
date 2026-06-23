@@ -21,31 +21,11 @@ class DhikrController extends Controller
             'daily_limit' => 'nullable|integer|min:1',
         ]);
 
-        $dhikr = Auth::user()->dhikrs()->create([
+        Auth::user()->dhikrs()->create([
             'name' => $validated['name'],
             'daily_limit' => $validated['daily_limit'],
             'last_reset_date' => now()->toDateString(),
         ]);
-
-        return redirect()->back();
-    }
-
-    public function increment(Dhikr $dhikr)
-    {
-        $this->authorize('update', $dhikr);
-
-        DB::transaction(function () use ($dhikr) {
-            $today = now()->toDateString();
-
-            if (!$dhikr->last_reset_date || $dhikr->last_reset_date->toDateString() !== $today) {
-                $dhikr->daily_count = 0;
-                $dhikr->last_reset_date = $today;
-            }
-
-            $dhikr->total_count++;
-            $dhikr->daily_count++;
-            $dhikr->save();
-        });
 
         return redirect()->back();
     }
@@ -109,7 +89,6 @@ class DhikrController extends Controller
             }
         });
 
-        $dhikrs = Auth::user()->dhikrs()->orderBy('created_at', 'desc')->get();
-        return inertia('Dashboard', ['dhikrs' => $dhikrs]);
+        return response()->json(['success' => true]);
     }
 }

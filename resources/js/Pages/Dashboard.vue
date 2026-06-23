@@ -76,7 +76,8 @@ onUnmounted(() => {
   window.removeEventListener('beforeunload', onBeforeUnload)
   window.removeEventListener('online', onOnline)
   window.removeEventListener('focus', onFocus)
-  sync.sync()
+  if (fadeTimer) clearTimeout(fadeTimer)
+  sync.syncBeforeUnload()
 })
 
 function onVisibilityChange() {
@@ -86,7 +87,7 @@ function onVisibilityChange() {
 }
 
 function onBeforeUnload() {
-  sync.sync()
+  sync.syncBeforeUnload()
 }
 
 function onOnline() {
@@ -101,6 +102,8 @@ function onFocus() {
   }
 }
 
+let fadeTimer = null
+
 watch(() => selectedId.value, (newId, oldId) => {
   if (oldId !== null && newId !== oldId) {
     sync.sync()
@@ -108,7 +111,8 @@ watch(() => selectedId.value, (newId, oldId) => {
   if (fadeRef.value) {
     fadeRef.value.style.opacity = '0'
     fadeRef.value.style.transform = 'translateY(10px)'
-    setTimeout(() => {
+    if (fadeTimer) clearTimeout(fadeTimer)
+    fadeTimer = setTimeout(() => {
       if (fadeRef.value) {
         fadeRef.value.style.opacity = '1'
         fadeRef.value.style.transform = 'translateY(0)'

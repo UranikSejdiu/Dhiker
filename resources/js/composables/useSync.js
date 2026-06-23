@@ -1,5 +1,4 @@
 import { ref } from 'vue'
-import { router } from '@inertiajs/vue3'
 
 const STORAGE_KEY = 'dhikr_sync'
 
@@ -75,16 +74,24 @@ function sync() {
     daily_count: counts.daily_count,
   }))
 
-  router.post(route('dhikrs.sync'), { dhikrs: payload }, {
-    preserveScroll: true,
-    preserveState: true,
-    onSuccess: () => {
-      hasPending.value = false
-    },
-    onError: () => {
-      hasPending.value = true
-    },
-  })
+  window.axios.post(route('dhikrs.sync'), { dhikrs: payload })
+    .then(() => { hasPending.value = false })
+    .catch(() => { hasPending.value = true })
+}
+
+function syncBeforeUnload() {
+  if (!hasPending.value) return
+
+  const payload = Object.entries(dhikrCounts.value).map(([id, counts]) => ({
+    id: Number(id),
+    total_count: counts.total_count,
+    daily_count: counts.daily_count,
+  }))
+
+  try {
+    navigator.sendBeacon(route('dhikrs.sync'), JSON.stringify({ dhikrs: payload }))
+    hasPending.value = false
+  } catch {}
 }
 
 export function useSync() {
@@ -96,5 +103,6 @@ export function useSync() {
     increment,
     resetCount,
     sync,
+    syncBeforeUnload,
   }
 }

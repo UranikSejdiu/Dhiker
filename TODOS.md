@@ -15,10 +15,9 @@
 - Login.vue + Dashboard.vue: all strings → `t()`, all unicode icons → `<i class="fi fi-*">`, all colors → theme `colors` reactive
 - Builds clean with `npm run build`
 
-## Pending (next)
-1. Set up PWA manifest + service worker
-2. Push git and deploy to Plesk
-3. Test full auth flow (email + Google OAuth)
+## All Done
+
+Everything's been implemented. Remaining to-do is deploy and test the auth flow manually on the live server.
 
 ## Key Context
 - **New app**: `C:\laragon\www\dhikr-counter-laravel` (all work here)

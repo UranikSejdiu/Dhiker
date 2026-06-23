@@ -327,7 +327,7 @@ const logout = () => {
             <div :style="{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }">
               <div :style="{ color: colors.text, fontSize: '18px', fontWeight: '600', flex: 1, marginRight: '8px', overflow: 'hidden' }">{{ d.name }}</div>
               <div :style="{ display: 'flex', gap: '4px' }">
-                <button @click.stop="openEditModal(d)" :style="{ padding: '6px', color: colors.textSecondary, fontSize: '18px', background: 'none', border: 'none', cursor: 'pointer' }"><i class="fi fi-rr-pen"></i></button>
+                <button @click.stop="openEditModal(d)" :style="{ padding: '6px', color: colors.textSecondary, fontSize: '18px', background: 'none', border: 'none', cursor: 'pointer', lineHeight: 1 }">✎</button>
                 <button @click.stop="deleteDhikr(d.id, d.name)" :style="{ padding: '6px', color: colors.error, fontSize: '18px', background: 'none', border: 'none', cursor: 'pointer' }"><i class="fi fi-rr-trash"></i></button>
               </div>
             </div>

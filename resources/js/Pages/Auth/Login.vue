@@ -2,7 +2,7 @@
 import { Head, useForm } from '@inertiajs/vue3'
 import { ref, onMounted } from 'vue'
 import { useLanguage } from '../../composables/useLanguage'
-import { useTheme } from '../../composables/useTheme'
+import { useTheme, toRgba } from '../../composables/useTheme'
 import { Button } from '@/Components/ui/button'
 
 const props = defineProps({
@@ -38,38 +38,69 @@ const handleGoogle = () => {
 
 onMounted(() => {
   setTimeout(() => {
-    if (headerRef.value) { headerRef.value.style.opacity = '1'; headerRef.value.style.transform = 'scale(1)' }
-    if (formRef.value) { formRef.value.style.opacity = '1'; formRef.value.style.transform = 'translateY(0)' }
+    if (headerRef.value) {
+      headerRef.value.style.opacity = '1'
+      headerRef.value.style.transform = 'scale(1)'
+    }
+    if (formRef.value) {
+      formRef.value.style.opacity = '1'
+      formRef.value.style.transform = 'translateY(0)'
+    }
   }, 100)
 })
 </script>
 
 <template>
   <Head :title="t('signInBtn')" />
-  <div class="min-h-screen flex items-center justify-center px-7" :style="{ backgroundColor: 'var(--background)' }">
-    <div class="w-full max-w-[420px]">
-      <div class="w-[60px] h-[3px] rounded-sm mx-auto mb-2" :style="{ background: `linear-gradient(90deg, ${colors.primary}, ${colors.primaryLight}, ${colors.primary})` }"></div>
+
+  <div
+    class="min-h-screen flex items-center justify-center px-7"
+    :style="{
+      backgroundColor: 'var(--background)',
+      backgroundImage: `radial-gradient(circle at top, ${toRgba(colors.primary, 0.12)} 0%, transparent 34%), radial-gradient(circle at bottom, ${toRgba(colors.accent, 0.08)} 0%, transparent 30%)`
+    }"
+  >
+    <div
+      class="w-full max-w-[420px]"
+      :style="{
+        borderRadius: '28px',
+        padding: '28px 24px',
+        backgroundColor: toRgba(colors.surface, 0.82),
+        border: `1px solid ${colors.border}`,
+        boxShadow: `0 18px 60px ${toRgba('#000000', 0.24)}`,
+        backdropFilter: 'blur(14px)'
+      }"
+    >
+      <div class="w-[60px] h-[3px] rounded-sm mx-auto mb-5" :style="{ background: `linear-gradient(90deg, ${colors.primary}, ${colors.primaryLight}, ${colors.primary})` }"></div>
 
       <div ref="headerRef" class="text-center mb-10" :style="{ opacity: 0, transform: 'scale(0.8)', transition: 'all 0.8s ease' }">
-        <div class="w-[90px] h-[90px] rounded-full mx-auto mb-4 flex items-center justify-center" :style="{ backgroundColor: 'var(--surface)', border: '2px solid var(--border)', boxShadow: `0 4px 12px ${colors.primary}40` }">
-          <span class="text-[42px]" :style="{ color: 'var(--primary)' }">☪</span>
+        <div class="w-[90px] h-[90px] rounded-full mx-auto mb-4 flex items-center justify-center" :style="{ backgroundColor: colors.surface, border: `1px solid ${colors.border}`, boxShadow: `0 10px 30px ${toRgba(colors.primary, 0.18)}` }">
+          <span class="text-[42px]" :style="{ color: colors.primary }">☪</span>
         </div>
-        <div class="text-[32px] font-bold tracking-wider mb-2" :style="{ color: 'var(--foreground)' }">{{ t('appTitle') }}</div>
-        <div class="text-[22px] mb-1.5 font-light" :style="{ color: 'var(--primary)' }">بِسْمِ اللهِ</div>
-        <div class="text-sm tracking-wide" :style="{ color: 'var(--muted-foreground)' }">{{ t('subtitle') }}</div>
+        <div class="text-[32px] font-bold tracking-wider mb-2" :style="{ color: colors.text }">{{ t('appTitle') }}</div>
+        <div class="text-[22px] mb-1.5 font-light" :style="{ color: colors.primary }">بِسْمِ اللهِ</div>
+        <div class="text-sm tracking-wide" :style="{ color: colors.textSecondary }">{{ t('subtitle') }}</div>
       </div>
 
       <div ref="formRef" :style="{ opacity: 0, transform: 'translateY(30px)', transition: 'all 0.8s ease 0.1s' }">
-        <div v-if="status" class="mb-5 p-3.5 rounded-xl text-center text-sm leading-tight" :style="{ backgroundColor: `${colors.primary}1F`, border: `1px solid ${colors.primary}40`, color: 'var(--primary)' }">
+        <div
+          v-if="status"
+          class="mb-5 p-3.5 rounded-xl text-center text-sm leading-tight"
+          :style="{ backgroundColor: toRgba(colors.primary, 0.10), border: `1px solid ${toRgba(colors.primary, 0.24)}`, color: colors.primary }"
+        >
           {{ status }}
         </div>
-        <div v-if="form.errors.email || form.errors.password" class="mb-5 p-3.5 rounded-xl text-center text-sm leading-tight" :style="{ backgroundColor: `${colors.error}1F`, border: `1px solid ${colors.error}40`, color: 'var(--error)' }">
+        <div
+          v-if="form.errors.email || form.errors.password"
+          class="mb-5 p-3.5 rounded-xl text-center text-sm leading-tight"
+          :style="{ backgroundColor: toRgba(colors.error, 0.10), border: `1px solid ${toRgba(colors.error, 0.24)}`, color: colors.error }"
+        >
           {{ form.errors.email || form.errors.password }}
         </div>
 
         <form @submit.prevent="submit">
           <div class="mb-[18px]">
-            <label class="block text-xs font-semibold tracking-wider uppercase mb-2" :style="{ color: 'var(--primary)' }">{{ t('emailLabel') }}</label>
+            <label class="block text-xs font-semibold tracking-wider uppercase mb-2" :style="{ color: colors.primary }">{{ t('emailLabel') }}</label>
             <input
               v-model="form.email"
               type="email"
@@ -77,14 +108,14 @@ onMounted(() => {
               autocomplete="email"
               :disabled="loading"
               class="w-full rounded-xl px-[18px] py-4 text-base outline-none transition-all duration-200 disabled:opacity-50"
-              :style="{ backgroundColor: 'var(--surface)', border: `1.5px solid var(--border)`, color: 'var(--foreground)' }"
-              @focus="(e) => { e.target.style.borderColor = colors.primary; e.target.style.boxShadow = `0 0 8px ${colors.primary}30` }"
-              @blur="(e) => { e.target.style.borderColor = 'var(--border)'; e.target.style.boxShadow = 'none' }"
+              :style="{ backgroundColor: colors.surface, border: `1.5px solid ${colors.border}`, color: colors.text }"
+              @focus="(e) => { e.target.style.borderColor = colors.primary; e.target.style.boxShadow = `0 0 0 4px ${toRgba(colors.primary, 0.14)}` }"
+              @blur="(e) => { e.target.style.borderColor = colors.border; e.target.style.boxShadow = 'none' }"
             />
           </div>
 
           <div class="mb-[18px]">
-            <label class="block text-xs font-semibold tracking-wider uppercase mb-2" :style="{ color: 'var(--primary)' }">{{ t('passwordLabel') }}</label>
+            <label class="block text-xs font-semibold tracking-wider uppercase mb-2" :style="{ color: colors.primary }">{{ t('passwordLabel') }}</label>
             <input
               v-model="form.password"
               type="password"
@@ -92,9 +123,9 @@ onMounted(() => {
               autocomplete="current-password"
               :disabled="loading"
               class="w-full rounded-xl px-[18px] py-4 text-base outline-none transition-all duration-200 disabled:opacity-50"
-              :style="{ backgroundColor: 'var(--surface)', border: `1.5px solid var(--border)`, color: 'var(--foreground)' }"
-              @focus="(e) => { e.target.style.borderColor = colors.primary; e.target.style.boxShadow = `0 0 8px ${colors.primary}30` }"
-              @blur="(e) => { e.target.style.borderColor = 'var(--border)'; e.target.style.boxShadow = 'none' }"
+              :style="{ backgroundColor: colors.surface, border: `1.5px solid ${colors.border}`, color: colors.text }"
+              @focus="(e) => { e.target.style.borderColor = colors.primary; e.target.style.boxShadow = `0 0 0 4px ${toRgba(colors.primary, 0.14)}` }"
+              @blur="(e) => { e.target.style.borderColor = colors.border; e.target.style.boxShadow = 'none' }"
             />
           </div>
 
@@ -102,7 +133,7 @@ onMounted(() => {
             type="submit"
             :disabled="loading"
             class="w-full mt-2 mb-6 text-base"
-            :style="{ background: `linear-gradient(135deg, ${colors.primary}, ${colors.primaryLight}, ${colors.primary})`, border: 'none', color: colors.background, boxShadow: `0 4px 12px ${colors.primary}60`, opacity: loading ? 0.7 : 1 }"
+            :style="{ backgroundColor: colors.primary, border: 'none', color: colors.primaryForeground, boxShadow: `0 10px 24px ${toRgba(colors.primary, 0.24)}`, opacity: loading ? 0.7 : 1 }"
           >
             {{ loading ? '...' : t('signInBtn') }}
           </Button>
@@ -124,17 +155,17 @@ onMounted(() => {
         </Button>
 
         <div class="flex items-center mb-6">
-          <div class="flex-1 h-px" :style="{ backgroundColor: 'var(--border)' }"></div>
-          <span class="mx-4 text-xs" :style="{ color: `${colors.primary}4F` }"><i class="fi fi-rr-star" :style="{ color: colors.primary, opacity: 0.5 }"></i></span>
-          <div class="flex-1 h-px" :style="{ backgroundColor: 'var(--border)' }"></div>
+          <div class="flex-1 h-px" :style="{ backgroundColor: colors.border }"></div>
+          <span class="mx-4 text-xs" :style="{ color: toRgba(colors.primary, 0.45) }"><i class="fi fi-rr-star" :style="{ color: colors.primary, opacity: 0.65 }"></i></span>
+          <div class="flex-1 h-px" :style="{ backgroundColor: colors.border }"></div>
         </div>
 
-        <div class="text-center py-2 text-sm" :style="{ color: 'var(--muted-foreground)' }">
+        <div class="text-center py-2 text-sm" :style="{ color: colors.textSecondary }">
           {{ t('noAccount') }}
-          <a :href="route('register')" class="font-semibold" :style="{ color: 'var(--primary)' }">{{ t('signUpBtn') }}</a>
+          <a :href="route('register')" class="font-semibold" :style="{ color: colors.primary }">{{ t('signUpBtn') }}</a>
         </div>
 
-        <div class="w-4/5 h-px mx-auto mt-8" :style="{ background: `linear-gradient(90deg, transparent, ${colors.primary}1F, transparent)` }"></div>
+        <div class="w-4/5 h-px mx-auto mt-8" :style="{ background: `linear-gradient(90deg, transparent, ${toRgba(colors.primary, 0.12)}, transparent)` }"></div>
       </div>
     </div>
   </div>

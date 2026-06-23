@@ -6,7 +6,7 @@ import Fireworks from '../Components/Fireworks.vue'
 import { APP_VERSION } from '../constants/version'
 import FlagIcon from '../Components/FlagIcon.vue'
 import { useLanguage } from '../composables/useLanguage'
-import { useTheme } from '../composables/useTheme'
+import { useTheme, toRgba } from '../composables/useTheme'
 import { useSync } from '../composables/useSync'
 import { useOrder } from '../composables/useOrder'
 import { Button } from '@/Components/ui/button'
@@ -272,7 +272,7 @@ const logout = () => {
 <template>
   <Head :title="t('appTitle')" />
 
-  <div :style="{ minHeight: '100dvh', display: 'flex', flexDirection: 'column', backgroundColor: colors.background, paddingBottom: '100px' }">
+  <div :style="{ minHeight: '100dvh', display: 'flex', flexDirection: 'column', backgroundColor: colors.background, backgroundImage: `radial-gradient(circle at top, ${toRgba(colors.primary, 0.10)} 0%, transparent 34%), radial-gradient(circle at bottom, ${toRgba(colors.accent, 0.08)} 0%, transparent 30%)`, paddingBottom: '100px' }">
 
     <!-- Fireworks -->
     <Fireworks v-if="showFireworks" @complete="showFireworks = false" />
@@ -283,7 +283,7 @@ const logout = () => {
         <button @click="cycle('prev')" :style="{ padding: '10px', color: colors.textSecondary, fontSize: '30px', fontWeight: '300', background: 'none', border: 'none', cursor: 'pointer', lineHeight: '30px' }">
           <i class="fi fi-rr-angle-left"></i>
         </button>
-        <div :style="{ color: colors.success, fontSize: '16px', fontWeight: '600', textAlign: 'center', flex: 1, padding: '0 10px', overflow: 'hidden', lineHeight: '22px' }">{{ selectedDhikr.name }}</div>
+        <div :style="{ color: colors.primary, fontSize: '16px', fontWeight: '600', textAlign: 'center', flex: 1, padding: '0 10px', overflow: 'hidden', lineHeight: '22px' }">{{ selectedDhikr.name }}</div>
         <button @click="cycle('next')" :style="{ padding: '10px', color: colors.textSecondary, fontSize: '30px', fontWeight: '300', background: 'none', border: 'none', cursor: 'pointer', lineHeight: '30px' }">
           <i class="fi fi-rr-angle-right"></i>
         </button>
@@ -294,10 +294,10 @@ const logout = () => {
         @click="increment"
         :style="{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', userSelect: 'none', WebkitTapHighlightColor: 'transparent', cursor: 'pointer', opacity: 0, transform: 'translateY(10px)', transition: 'opacity 0.6s ease, transform 0.6s ease' }"
       >
-        <div :style="{ color: colors.textSecondary, fontSize: '160px', fontWeight: '200', letterSpacing: '-5px', textAlign: 'center', lineHeight: 1 }">
+        <div :style="{ color: colors.text, fontSize: '160px', fontWeight: '200', letterSpacing: '-5px', textAlign: 'center', lineHeight: 1 }">
           {{ localTotal.toLocaleString() }}
         </div>
-        <div v-if="showLimitWarning" :style="{ position: 'absolute', bottom: '100px', backgroundColor: `${colors.error}1A`, padding: '10px 20px', borderRadius: '20px', border: `1px solid ${colors.error}4D` }">
+        <div v-if="showLimitWarning" :style="{ position: 'absolute', bottom: '100px', backgroundColor: toRgba(colors.error, 0.12), padding: '10px 20px', borderRadius: '20px', border: `1px solid ${toRgba(colors.error, 0.30)}` }">
           <div :style="{ color: colors.error, fontSize: '14px', fontWeight: '500', textAlign: 'center' }">{{ t('limitReached') }}</div>
         </div>
       </div>
@@ -306,10 +306,10 @@ const logout = () => {
     <!-- Empty state -->
     <template v-else>
       <div :style="{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', padding: '0 40px' }">
-        <div :style="{ fontSize: '56px', color: colors.primary, marginBottom: '16px', opacity: 0.6 }"><i class="fi fi-rr-star"></i></div>
+        <div :style="{ fontSize: '56px', color: colors.primary, marginBottom: '16px', opacity: 0.8, textShadow: `0 0 20px ${toRgba(colors.primary, 0.24)}` }"><i class="fi fi-rr-star"></i></div>
         <div :style="{ color: colors.text, fontSize: '24px', fontWeight: '600', marginBottom: '8px' }">{{ t('noDhikrYet') }}</div>
         <div :style="{ color: colors.textSecondary, fontSize: '15px', marginBottom: '32px', textAlign: 'center' }">{{ t('addFirstDhikr') }}</div>
-        <button @click="openCreateModal" :style="{ backgroundColor: colors.surface, border: `1px solid ${colors.primary}40`, borderRadius: '14px', padding: '14px 28px', color: colors.primary, fontSize: '16px', fontWeight: '600', cursor: 'pointer' }">{{ t('addDhikrBtn') }}</button>
+        <button @click="openCreateModal" :style="{ backgroundColor: colors.surface, border: `1px solid ${toRgba(colors.primary, 0.28)}`, borderRadius: '14px', padding: '14px 28px', color: colors.primary, fontSize: '16px', fontWeight: '600', cursor: 'pointer', boxShadow: `0 8px 24px ${toRgba(colors.primary, 0.08)}` }">{{ t('addDhikrBtn') }}</button>
       </div>
     </template>
 
@@ -339,7 +339,7 @@ const logout = () => {
         <SheetHeader class="text-left px-4 pt-2 shrink-0">
           <div class="flex items-center justify-between w-full pr-8">
             <SheetTitle>{{ t('myDhikrs') }}</SheetTitle>
-            <Button :style="{ backgroundColor: colors.surfaceLight, border: `1px solid ${colors.border}`, color: colors.primary, borderRadius: '8px', fontWeight: '600', fontSize: '14px', padding: '10px 22px' }" @click.stop="openCreateModal">{{ t('newBtn') }}</Button>
+            <Button :style="{ backgroundColor: colors.surfaceLight, border: `1px solid ${colors.border}`, color: colors.primary, borderRadius: '10px', fontWeight: '600', fontSize: '14px', padding: '10px 22px' }" @click.stop="openCreateModal">{{ t('newBtn') }}</Button>
           </div>
         </SheetHeader>
 
@@ -353,7 +353,7 @@ const logout = () => {
           </template>
 
           <VueDraggable v-model="localDhikrs" handle=".drag-handle" ghost-class="opacity-40" :animation="200" @end="onDragEnd" class="space-y-3" v-else>
-            <div v-for="d in localDhikrs" :key="d.id" class="rounded-xl p-4 bg-muted cursor-pointer" :style="{ border: `1px solid ${d.id === selectedId ? colors.primary + '60' : 'var(--border)'}` }" @click="selectedId = d.id; showDhikrsPanel = false">
+            <div v-for="d in localDhikrs" :key="d.id" class="rounded-xl p-4 bg-muted cursor-pointer" :style="{ border: `1px solid ${d.id === selectedId ? toRgba(colors.primary, 0.55) : 'var(--border)'}`, background: d.id === selectedId ? toRgba(colors.primary, 0.06) : 'var(--muted)' }" @click="selectedId = d.id; showDhikrsPanel = false">
               <div class="flex items-center gap-2.5">
                 <button class="drag-handle text-muted-foreground text-lg leading-none cursor-grab active:cursor-grabbing select-none" :style="{ touchAction: 'none' }">⠿</button>
                 <div class="text-foreground text-lg font-semibold flex-1 truncate">{{ d.name }}</div>
@@ -412,7 +412,7 @@ const logout = () => {
             <div class="flex justify-between items-center p-4">
               <span class="text-sm text-foreground">Theme</span>
               <div class="flex gap-2">
-                <button v-for="tn in themeNames" :key="tn" @click="setTheme(tn)" class="w-8 h-8 rounded-full flex items-center justify-center cursor-pointer p-0" :style="{ border: `2px solid ${themeName === tn ? colors.primary : 'transparent'}`, backgroundColor: themes[tn].background }">
+                <button v-for="tn in themeNames" :key="tn" @click="setTheme(tn)" class="w-8 h-8 rounded-full flex items-center justify-center cursor-pointer p-0" :style="{ border: `2px solid ${themeName === tn ? colors.primary : 'transparent'}`, backgroundColor: themes[tn].surface, boxShadow: themeName === tn ? `0 0 0 3px ${toRgba(themes[tn].primary, 0.12)}` : 'none' }">
                   <div class="w-3.5 h-3.5 rounded-full" :style="{ backgroundColor: themes[tn].primary }"></div>
                 </button>
               </div>
@@ -422,7 +422,7 @@ const logout = () => {
           <!-- Language Section -->
           <p class="text-xs font-semibold tracking-wider text-muted-foreground ml-1">{{ t('languageSection') }}</p>
           <div class="flex flex-wrap gap-2.5">
-            <button v-for="l in LANGUAGES_LIST" :key="l.code" @click="setLanguage(l.code)" class="flex items-center gap-2 rounded-full px-4 py-2.5 cursor-pointer text-sm font-semibold" :style="{ backgroundColor: language === l.code ? 'var(--surface)' : 'var(--surface-light)', border: `1px solid ${language === l.code ? colors.primary : 'var(--border)'}` }">
+            <button v-for="l in LANGUAGES_LIST" :key="l.code" @click="setLanguage(l.code)" class="flex items-center gap-2 rounded-full px-4 py-2.5 cursor-pointer text-sm font-semibold" :style="{ backgroundColor: language === l.code ? toRgba(colors.primary, 0.10) : 'var(--surface-light)', border: `1px solid ${language === l.code ? toRgba(colors.primary, 0.28) : 'var(--border)'}` }">
               <FlagIcon :countryCode="l.countryCode" :size="18" />
               <span :style="{ color: language === l.code ? colors.primary : colors.textSecondary }">{{ l.name }}</span>
             </button>
@@ -453,7 +453,7 @@ const logout = () => {
           </div>
 
           <div class="pt-4">
-            <Button class="w-full" :style="{ backgroundColor: colors.error, color: '#FFFFFF', border: 'none' }" @click="logout">{{ t('signOut') }}</Button>
+            <Button class="w-full" :style="{ backgroundColor: colors.error, color: colors.destructiveForeground, border: 'none' }" @click="logout">{{ t('signOut') }}</Button>
           </div>
           <div class="h-10"></div>
         </div>
@@ -479,7 +479,7 @@ const logout = () => {
         </div>
         <div class="flex justify-end gap-3 mt-2">
           <Button variant="ghost" @click="showModal = false">{{ t('cancel') }}</Button>
-          <Button @click="saveDhikr" :style="{ background: `linear-gradient(135deg, ${colors.primary}, ${colors.primaryLight}, ${colors.primary})`, border: 'none', color: colors.background }">{{ t('saveBtn') }}</Button>
+          <Button @click="saveDhikr" :style="{ backgroundColor: colors.primary, border: 'none', color: colors.primaryForeground, boxShadow: `0 10px 24px ${toRgba(colors.primary, 0.22)}` }">{{ t('saveBtn') }}</Button>
         </div>
       </DialogContent>
     </Dialog>
@@ -493,7 +493,7 @@ const logout = () => {
         </DialogHeader>
         <div class="flex justify-end gap-3">
           <Button variant="ghost" @click="confirmAction = null">{{ t('cancel') }}</Button>
-          <Button :style="{ backgroundColor: colors.error, color: '#FFFFFF', border: 'none' }" @click="confirmAction?.onConfirm">{{ t('confirm') }}</Button>
+          <Button :style="{ backgroundColor: colors.error, color: colors.destructiveForeground, border: 'none' }" @click="confirmAction?.onConfirm">{{ t('confirm') }}</Button>
         </div>
       </DialogContent>
     </Dialog>

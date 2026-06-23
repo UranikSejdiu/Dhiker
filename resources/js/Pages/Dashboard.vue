@@ -158,7 +158,7 @@ const cycle = (dir) => {
 function onDragEnd() {
   const orderIds = localDhikrs.value.map(d => d.id)
   order.persistOrder(orderIds)
-  order.scheduleSync(orderIds)
+  order.syncOrder(orderIds)
 }
 
 const increment = () => {

@@ -9,9 +9,9 @@ import { useLanguage } from '../composables/useLanguage'
 import { useTheme } from '../composables/useTheme'
 import { useSync } from '../composables/useSync'
 import { useOrder } from '../composables/useOrder'
-import { Button } from '@/components/ui/button'
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
+import { Button } from '@/Components/ui/button'
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/Components/ui/sheet'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/Components/ui/dialog'
 
 const LANGUAGES_LIST = [
   { code: 'en', name: 'English', countryCode: 'gb' },

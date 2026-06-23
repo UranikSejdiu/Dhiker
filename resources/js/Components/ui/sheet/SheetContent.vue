@@ -9,7 +9,7 @@ import {
   useForwardPropsEmits,
 } from "reka-ui";
 import { cn } from "@/lib/utils";
-import { Button } from '@/components/ui/button';
+import { Button } from '@/Components/ui/button';
 import SheetOverlay from "./SheetOverlay.vue";
 
 defineOptions({

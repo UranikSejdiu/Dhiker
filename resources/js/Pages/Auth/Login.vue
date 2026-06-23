@@ -3,7 +3,7 @@ import { Head, useForm } from '@inertiajs/vue3'
 import { ref, onMounted } from 'vue'
 import { useLanguage } from '../../composables/useLanguage'
 import { useTheme } from '../../composables/useTheme'
-import { Button } from '@/components/ui/button'
+import { Button } from '@/Components/ui/button'
 
 const props = defineProps({
   status: String,

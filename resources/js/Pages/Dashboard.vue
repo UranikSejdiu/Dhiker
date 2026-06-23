@@ -317,80 +317,82 @@ const logout = () => {
 
     <!-- Toolbar -->
     <div class="fixed bottom-0 left-0 right-0 flex justify-center pointer-events-none z-10" :style="{ padding: '8px 0 max(env(safe-area-inset-bottom, 20px), 20px)' }">
-      <div class="flex items-center rounded-full p-2.5 pointer-events-auto" :style="{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)', boxShadow: '0 2px 8px rgba(0,0,0,0.3)' }">
-        <div class="flex flex-col items-center px-5 gap-1">
-          <Button variant="ghost" size="icon" @click="resetDaily"><i class="fi fi-rr-refresh"></i></Button>
-          <span class="text-[10px] font-medium text-center text-muted-foreground">{{ t('resetLabel') }}</span>
+      <div class="flex items-center rounded-full p-3.5 pointer-events-auto gap-1" :style="{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)', boxShadow: '0 2px 12px rgba(0,0,0,0.4)' }">
+        <div class="flex flex-col items-center px-6 gap-1.5">
+          <Button variant="ghost" size="icon-lg" @click="resetDaily"><i class="fi fi-rr-refresh text-xl"></i></Button>
+          <span class="text-xs font-semibold text-center text-muted-foreground">{{ t('resetLabel') }}</span>
         </div>
-        <div class="w-px h-8" :style="{ backgroundColor: 'var(--border)', opacity: 0.5 }"></div>
-        <div class="flex flex-col items-center px-5 gap-1">
-          <Button variant="ghost" size="icon" @click="showDhikrsPanel = true"><i class="fi fi-rr-menu-burger"></i></Button>
-          <span class="text-[10px] font-medium text-center text-muted-foreground">{{ t('dhikrsLabel') }}</span>
+        <div class="w-px h-10" :style="{ backgroundColor: 'var(--border)', opacity: 0.5 }"></div>
+        <div class="flex flex-col items-center px-6 gap-1.5">
+          <Button variant="ghost" size="icon-lg" @click="showDhikrsPanel = true"><i class="fi fi-rr-menu-burger text-xl"></i></Button>
+          <span class="text-xs font-semibold text-center text-muted-foreground">{{ t('dhikrsLabel') }}</span>
         </div>
-        <div class="w-px h-8" :style="{ backgroundColor: 'var(--border)', opacity: 0.5 }"></div>
-        <div class="flex flex-col items-center px-5 gap-1">
-          <Button variant="ghost" size="icon" @click="showSettingsPanel = true"><i class="fi fi-rr-settings"></i></Button>
-          <span class="text-[10px] font-medium text-center text-muted-foreground">{{ t('settingsLabel') }}</span>
+        <div class="w-px h-10" :style="{ backgroundColor: 'var(--border)', opacity: 0.5 }"></div>
+        <div class="flex flex-col items-center px-6 gap-1.5">
+          <Button variant="ghost" size="icon-lg" @click="showSettingsPanel = true"><i class="fi fi-rr-settings text-xl"></i></Button>
+          <span class="text-xs font-semibold text-center text-muted-foreground">{{ t('settingsLabel') }}</span>
         </div>
       </div>
     </div>
 
     <!-- Dhikrs Panel (bottom sheet) -->
     <Sheet v-model:open="showDhikrsPanel">
-      <SheetContent side="bottom" class="max-h-[85vh] px-4 pb-8">
-        <SheetHeader class="text-left px-0">
+      <SheetContent side="bottom" class="max-h-[85vh] px-0 pb-0 flex flex-col overflow-hidden">
+        <SheetHeader class="text-left px-4 pt-2 shrink-0">
           <div class="flex items-center justify-between w-full pr-8">
             <SheetTitle>{{ t('myDhikrs') }}</SheetTitle>
             <Button size="sm" @click.stop="openCreateModal">{{ t('newBtn') }}</Button>
           </div>
         </SheetHeader>
 
-        <template v-if="localDhikrs.length === 0">
-          <div class="flex flex-col items-center py-12">
-            <i class="fi fi-rr-menu-burger text-4xl text-muted-foreground/50 mb-3"></i>
-            <p class="text-base font-semibold text-muted-foreground">{{ t('noDhikrsAdded') }}</p>
-            <p class="text-sm text-muted-foreground/70">{{ t('tapNewToCreate') }}</p>
-          </div>
-        </template>
+        <div class="overflow-y-auto flex-1 px-4 pb-8">
+          <template v-if="localDhikrs.length === 0">
+            <div class="flex flex-col items-center py-12">
+              <i class="fi fi-rr-menu-burger text-4xl text-muted-foreground/50 mb-3"></i>
+              <p class="text-base font-semibold text-muted-foreground">{{ t('noDhikrsAdded') }}</p>
+              <p class="text-sm text-muted-foreground/70">{{ t('tapNewToCreate') }}</p>
+            </div>
+          </template>
 
-        <VueDraggable v-model="localDhikrs" handle=".drag-handle" ghost-class="opacity-40" :animation="200" @end="onDragEnd" class="space-y-3" v-else>
-          <div v-for="d in localDhikrs" :key="d.id" class="rounded-xl p-4 bg-muted cursor-pointer" :style="{ border: `1px solid ${d.id === selectedId ? colors.primary + '60' : 'var(--border)'}` }" @click="selectedId = d.id; showDhikrsPanel = false">
-            <div class="flex items-center gap-2.5">
-              <button class="drag-handle text-muted-foreground text-lg leading-none cursor-grab active:cursor-grabbing select-none" :style="{ touchAction: 'none' }">⠿</button>
-              <div class="text-foreground text-lg font-semibold flex-1 truncate">{{ d.name }}</div>
-              <div class="flex gap-1">
-                <Button variant="ghost" size="icon-xs" @click.stop="openEditModal(d)"><i class="fi fi-rr-edit"></i></Button>
-                <Button variant="ghost" size="icon-xs" :style="{ color: 'var(--error)' }" @click.stop="deleteDhikr(d.id, d.name)"><i class="fi fi-rr-trash"></i></Button>
+          <VueDraggable v-model="localDhikrs" handle=".drag-handle" ghost-class="opacity-40" :animation="200" @end="onDragEnd" class="space-y-3" v-else>
+            <div v-for="d in localDhikrs" :key="d.id" class="rounded-xl p-4 bg-muted cursor-pointer" :style="{ border: `1px solid ${d.id === selectedId ? colors.primary + '60' : 'var(--border)'}` }" @click="selectedId = d.id; showDhikrsPanel = false">
+              <div class="flex items-center gap-2.5">
+                <button class="drag-handle text-muted-foreground text-lg leading-none cursor-grab active:cursor-grabbing select-none" :style="{ touchAction: 'none' }">⠿</button>
+                <div class="text-foreground text-lg font-semibold flex-1 truncate">{{ d.name }}</div>
+                <div class="flex gap-1">
+                  <Button variant="ghost" size="icon-xs" @click.stop="openEditModal(d)"><i class="fi fi-rr-edit"></i></Button>
+                  <Button variant="ghost" size="icon-xs" :style="{ color: 'var(--error)' }" @click.stop="deleteDhikr(d.id, d.name)"><i class="fi fi-rr-trash"></i></Button>
+                </div>
+              </div>
+              <div class="flex justify-between items-center mt-2">
+                <span class="text-xs text-muted-foreground">{{ t('total') }} {{ sync.dhikrCounts.value[d.id]?.total_count ?? d.total_count }}</span>
+                <span v-if="d.daily_limit !== null" class="text-sm font-semibold" :style="{ color: 'var(--primary)' }">
+                  {{ sync.dhikrCounts.value[d.id]?.daily_count ?? d.daily_count }}/{{ d.daily_limit }}
+                </span>
+              </div>
+              <div v-if="d.daily_limit !== null" class="h-1 rounded-full overflow-hidden mt-2.5" :style="{ backgroundColor: 'var(--border)' }">
+                <div
+                  :style="{
+                    height: '100%', borderRadius: '999px', transition: 'width 0.3s',
+                    width: Math.min(((sync.dhikrCounts.value[d.id]?.daily_count ?? d.daily_count) || 0) / d.daily_limit * 100, 100) + '%',
+                    backgroundColor: (sync.dhikrCounts.value[d.id]?.daily_count ?? d.daily_count) >= d.daily_limit ? 'var(--success)' : 'var(--primary)'
+                  }"
+                />
               </div>
             </div>
-            <div class="flex justify-between items-center mt-2">
-              <span class="text-xs text-muted-foreground">{{ t('total') }} {{ sync.dhikrCounts.value[d.id]?.total_count ?? d.total_count }}</span>
-              <span v-if="d.daily_limit !== null" class="text-sm font-semibold" :style="{ color: 'var(--primary)' }">
-                {{ sync.dhikrCounts.value[d.id]?.daily_count ?? d.daily_count }}/{{ d.daily_limit }}
-              </span>
-            </div>
-            <div v-if="d.daily_limit !== null" class="h-1 rounded-full overflow-hidden mt-2.5" :style="{ backgroundColor: 'var(--border)' }">
-              <div
-                :style="{
-                  height: '100%', borderRadius: '999px', transition: 'width 0.3s',
-                  width: Math.min(((sync.dhikrCounts.value[d.id]?.daily_count ?? d.daily_count) || 0) / d.daily_limit * 100, 100) + '%',
-                  backgroundColor: (sync.dhikrCounts.value[d.id]?.daily_count ?? d.daily_count) >= d.daily_limit ? 'var(--success)' : 'var(--primary)'
-                }"
-              />
-            </div>
-          </div>
-        </VueDraggable>
-        <div class="h-8"></div>
+          </VueDraggable>
+          <div class="h-8"></div>
+        </div>
       </SheetContent>
     </Sheet>
 
     <!-- Settings Panel (bottom sheet) -->
     <Sheet v-model:open="showSettingsPanel">
-      <SheetContent side="bottom" class="max-h-[85vh] px-4 pb-8">
-        <SheetHeader class="text-left px-0">
+      <SheetContent side="bottom" class="max-h-[85vh] px-0 pb-0 flex flex-col overflow-hidden">
+        <SheetHeader class="text-left px-4 pt-2 shrink-0">
           <SheetTitle>{{ t('settings') }}</SheetTitle>
         </SheetHeader>
-        <div class="overflow-y-auto flex-1 space-y-6">
+        <div class="overflow-y-auto flex-1 px-4 pb-8 space-y-6">
 
           <!-- Account Section -->
           <p class="text-xs font-semibold tracking-wider text-muted-foreground ml-1">{{ t('accountSection') }}</p>
@@ -431,7 +433,7 @@ const logout = () => {
           <!-- Sync Section -->
           <div>
             <p class="text-xs font-semibold tracking-wider text-muted-foreground ml-1 mb-2">SYNC</p>
-            <Button variant="outline" class="w-full justify-between" @click="hardRefresh">
+            <Button variant="outline" class="w-full justify-center" @click="hardRefresh">
               <span>{{ t('refreshFromServer') }}</span>
             </Button>
           </div>
@@ -453,7 +455,7 @@ const logout = () => {
           </div>
 
           <div class="pt-4">
-            <Button variant="destructive" class="w-full" @click="logout">{{ t('signOut') }}</Button>
+            <Button class="w-full" :style="{ backgroundColor: colors.error, color: '#FFFFFF', border: 'none' }" @click="logout">{{ t('signOut') }}</Button>
           </div>
           <div class="h-10"></div>
         </div>
@@ -493,7 +495,7 @@ const logout = () => {
         </DialogHeader>
         <div class="flex justify-end gap-3">
           <Button variant="ghost" @click="confirmAction = null">{{ t('cancel') }}</Button>
-          <Button variant="destructive" @click="confirmAction?.onConfirm">{{ t('confirm') }}</Button>
+          <Button :style="{ backgroundColor: colors.error, color: '#FFFFFF', border: 'none' }" @click="confirmAction?.onConfirm">{{ t('confirm') }}</Button>
         </div>
       </DialogContent>
     </Dialog>

@@ -182,6 +182,36 @@ function onDragEnd() {
   dragOverIndex.value = null
 }
 
+let touchStartY = 0
+const touchDragIndex = ref(null)
+
+function onTouchStart(index, event) {
+  touchDragIndex.value = index
+  touchStartY = event.touches[0].clientY
+}
+
+function onTouchMove(event) {
+  if (touchDragIndex.value === null) return
+  const touchY = event.touches[0].clientY
+  const cards = document.querySelectorAll('[data-dhikr-index]')
+  for (let i = 0; i < cards.length; i++) {
+    const r = cards[i].getBoundingClientRect()
+    if (touchY >= r.top && touchY <= r.bottom) {
+      dragOverIndex.value = i
+      break
+    }
+  }
+}
+
+function onTouchEnd() {
+  if (touchDragIndex.value !== null && dragOverIndex.value !== null && touchDragIndex.value !== dragOverIndex.value) {
+    moveItem(touchDragIndex.value, dragOverIndex.value)
+  }
+  touchDragIndex.value = null
+  dragIndex.value = null
+  dragOverIndex.value = null
+}
+
 const increment = () => {
   if (!selectedDhikr.value) return
   const d = selectedDhikr.value
@@ -375,6 +405,7 @@ const logout = () => {
           <div
             v-for="(d, di) in localDhikrs"
             :key="d.id"
+            :data-dhikr-index="di"
             draggable="true"
             @click="selectedId = d.id; showDhikrsPanel = false"
             @dragstart.prevent="onDragStart(di)"
@@ -386,14 +417,17 @@ const logout = () => {
               border: `1px solid ${d.id === selectedId ? colors.primary + '60' : colors.border}`,
               marginBottom: '12px', cursor: 'pointer',
               transition: 'background-color 0.15s',
-              opacity: dragIndex === di ? 0.5 : 1,
+              opacity: touchDragIndex === di ? 0.5 : dragIndex === di ? 0.5 : 1,
             }"
           >
             <div :style="{ display: 'flex', alignItems: 'center', gap: '10px' }">
               <button
                 @click.stop
                 @mousedown.stop
-                :style="{ color: colors.textMuted, fontSize: '18px', padding: '4px 2px', background: 'none', border: 'none', cursor: 'grab', lineHeight: 1, userSelect: 'none' }"
+                @touchstart.prevent.stop="onTouchStart(di, $event)"
+                @touchmove.prevent="onTouchMove"
+                @touchend.prevent="onTouchEnd"
+                :style="{ color: colors.textMuted, fontSize: '18px', padding: '4px 2px', background: 'none', border: 'none', cursor: 'grab', lineHeight: 1, userSelect: 'none', touchAction: 'none' }"
               >⠿</button>
               <div :style="{ color: colors.text, fontSize: '18px', fontWeight: '600', flex: 1, overflow: 'hidden' }">{{ d.name }}</div>
               <div :style="{ display: 'flex', gap: '4px' }">

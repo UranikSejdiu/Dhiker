@@ -4,6 +4,7 @@ import { ref, onMounted } from 'vue'
 import { useLanguage } from '../../composables/useLanguage'
 import { useTheme, toRgba } from '../../composables/useTheme'
 import { Button } from '@/Components/ui/button'
+import { Input } from '@/Components/ui/input'
 
 const props = defineProps({
   status: String,
@@ -101,31 +102,25 @@ onMounted(() => {
         <form @submit.prevent="submit">
           <div class="mb-[18px]">
             <label class="block text-xs font-semibold tracking-wider uppercase mb-2" :style="{ color: colors.primary }">{{ t('emailLabel') }}</label>
-            <input
+            <Input
               v-model="form.email"
               type="email"
               :placeholder="t('emailLabel')"
               autocomplete="email"
               :disabled="loading"
-              class="w-full rounded-xl px-[18px] py-4 text-base outline-none transition-all duration-200 disabled:opacity-50"
-              :style="{ backgroundColor: colors.surface, border: `1.5px solid ${colors.border}`, color: colors.text }"
-              @focus="(e) => { e.target.style.borderColor = colors.primary; e.target.style.boxShadow = `0 0 0 4px ${toRgba(colors.primary, 0.14)}` }"
-              @blur="(e) => { e.target.style.borderColor = colors.border; e.target.style.boxShadow = 'none' }"
+              class="h-12 rounded-xl bg-background/90 text-base"
             />
           </div>
 
           <div class="mb-[18px]">
             <label class="block text-xs font-semibold tracking-wider uppercase mb-2" :style="{ color: colors.primary }">{{ t('passwordLabel') }}</label>
-            <input
+            <Input
               v-model="form.password"
               type="password"
               :placeholder="t('passwordLabel')"
               autocomplete="current-password"
               :disabled="loading"
-              class="w-full rounded-xl px-[18px] py-4 text-base outline-none transition-all duration-200 disabled:opacity-50"
-              :style="{ backgroundColor: colors.surface, border: `1.5px solid ${colors.border}`, color: colors.text }"
-              @focus="(e) => { e.target.style.borderColor = colors.primary; e.target.style.boxShadow = `0 0 0 4px ${toRgba(colors.primary, 0.14)}` }"
-              @blur="(e) => { e.target.style.borderColor = colors.border; e.target.style.boxShadow = 'none' }"
+              class="h-12 rounded-xl bg-background/90 text-base"
             />
           </div>
 

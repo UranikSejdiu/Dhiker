@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\DhikrController;
+use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\Auth\SocialiteController;
 use Illuminate\Support\Facades\Route;
@@ -15,6 +16,9 @@ Route::get('/', function () {
 
 Route::middleware(['auth'])->group(function () {
     Route::get('/dashboard', [DhikrController::class, 'index'])->name('dashboard');
+    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
     Route::post('/dhikrs', [DhikrController::class, 'store'])->name('dhikrs.store');
     Route::patch('/dhikrs/{dhikr}', [DhikrController::class, 'update'])->name('dhikrs.update');
     Route::delete('/dhikrs/{dhikr}', [DhikrController::class, 'destroy'])->name('dhikrs.destroy');

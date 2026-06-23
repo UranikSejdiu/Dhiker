@@ -148,3 +148,17 @@ resources/views/
 - Removed `slideUp` keyframe animation (Sheet handles its own transitions)
 - Cleaned up unused drag state refs and touch event handlers
 - Removed unused imports
+
+### Session 5b (June 23, 2026) - Order sync fixes
+
+- Removed localStorage order override on page load - server order (sort_order) is source of truth
+
+- Removed 2s debounce from order sync - sends immediately on drag end
+
+- Fixed sendBeacon to use Blob with application/json for proper Laravel parsing
+
+- Excluded dhikrs/reorder and dhikrs/sync from CSRF in bootstrap/app.php
+
+- Added order retry on online and focus events when orderPending
+
+- LocalStorage write still works as cache for offline use

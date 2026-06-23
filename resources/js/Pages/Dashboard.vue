@@ -339,7 +339,7 @@ const logout = () => {
         <SheetHeader class="text-left px-4 pt-2 shrink-0">
           <div class="flex items-center justify-between w-full pr-8">
             <SheetTitle>{{ t('myDhikrs') }}</SheetTitle>
-            <Button size="sm" :style="{ backgroundColor: colors.surfaceLight, border: `1px solid ${colors.border}`, color: colors.primary, borderRadius: '20px', fontWeight: '600', fontSize: '14px' }" @click.stop="openCreateModal">{{ t('newBtn') }}</Button>
+            <Button :style="{ backgroundColor: colors.surfaceLight, border: `1px solid ${colors.border}`, color: colors.primary, borderRadius: '8px', fontWeight: '600', fontSize: '14px', padding: '10px 22px' }" @click.stop="openCreateModal">{{ t('newBtn') }}</Button>
           </div>
         </SheetHeader>
 

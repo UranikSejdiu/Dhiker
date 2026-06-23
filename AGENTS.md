@@ -105,6 +105,16 @@ resources/views/
 - Removed Husky (Windows incompatibility)
 
 ### Session 3 (June 23, 2026) — Cleanup & polish
+
+### Session 4 (June 23, 2026) — Dhikr reordering
+- Added `sort_order` column to dhikrs table (migration)
+- New `POST /dhikrs/reorder` endpoint with ownership validation
+- Dhikrs index now ordered by `sort_order ASC, created_at DESC`
+- New dhikrs get placed at the bottom (`max(sort_order) + 1`)
+- Created `useOrder.js` composable — offline-first reorder with localStorage fallback + debounced server sync
+- Drag handle (⠿) on each dhikr card in the panel, HTML5 native drag-and-drop
+- Optimistic reorder: moves instantly in UI, persists to localStorage, syncs to DB when online
+- Nav arrows (cycle) follow the custom order
 - Changed sync endpoint to return JSON (`response()->json(...)`) instead of full Inertia page render
 - Switched `useSync.js` from Inertia `router.post()` to `window.axios.post()` for lighter sync requests
 - Fixed debounce timer leak: `fadeTimer` in Dashboard.vue is now properly cleared on each switch

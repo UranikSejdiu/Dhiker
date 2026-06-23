@@ -15,9 +15,12 @@
 - Login.vue + Dashboard.vue: all strings → `t()`, all unicode icons → `<i class="fi fi-*">`, all colors → theme `colors` reactive
 - Builds clean with `npm run build`
 
-## All Done
+## Done (Session 4)
+1. Dhikr reordering — drag handles, localStorage offline-first, DB sync
 
-Everything's been implemented. Remaining to-do is deploy and test the auth flow manually on the live server.
+## Remaining
+- Run `php artisan migrate` when MySQL is available (adds `sort_order` column)
+- Deploy and test on live server
 
 ## Key Context
 - **New app**: `C:\laragon\www\dhikr-counter-laravel` (all work here)

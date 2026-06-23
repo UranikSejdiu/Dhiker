@@ -10,7 +10,7 @@ class DhikrController extends Controller
 {
     public function index()
     {
-        $dhikrs = Auth::user()->dhikrs()->orderBy('created_at', 'desc')->get();
+        $dhikrs = Auth::user()->dhikrs()->orderBy('sort_order')->orderBy('created_at', 'desc')->get();
         return inertia('Dashboard', ['dhikrs' => $dhikrs]);
     }
 
@@ -21,10 +21,13 @@ class DhikrController extends Controller
             'daily_limit' => 'nullable|integer|min:1',
         ]);
 
+        $maxOrder = Auth::user()->dhikrs()->max('sort_order') ?? 0;
+
         Auth::user()->dhikrs()->create([
             'name' => $validated['name'],
             'daily_limit' => $validated['daily_limit'],
             'last_reset_date' => now()->toDateString(),
+            'sort_order' => $maxOrder + 1,
         ]);
 
         return redirect()->back();
@@ -42,6 +45,27 @@ class DhikrController extends Controller
         $dhikr->update($validated);
 
         return redirect()->back();
+    }
+
+    public function reorder(Request $request)
+    {
+        $data = $request->validate([
+            'order' => 'required|array',
+            'order.*' => 'required|integer|exists:dhikrs,id',
+        ]);
+
+        $userIds = Auth::user()->dhikrs()->pluck('id')->flip();
+
+        DB::transaction(function () use ($data, $userIds) {
+            foreach ($data['order'] as $i => $id) {
+                if (!$userIds->has($id)) {
+                    abort(403);
+                }
+                Dhikr::where('id', $id)->update(['sort_order' => $i]);
+            }
+        });
+
+        return response()->json(['success' => true]);
     }
 
     public function destroy(Dhikr $dhikr)

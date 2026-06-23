@@ -11,7 +11,7 @@ class Dhikr extends Model
     /** @use HasFactory<DhikrFactory> */
     use HasFactory;
 
-    protected $fillable = ['name', 'total_count', 'daily_count', 'daily_limit', 'last_reset_date'];
+    protected $fillable = ['name', 'total_count', 'daily_count', 'daily_limit', 'last_reset_date', 'sort_order'];
 
     protected function casts(): array
     {

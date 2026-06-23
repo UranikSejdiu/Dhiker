@@ -7,6 +7,7 @@ import FlagIcon from '../Components/FlagIcon.vue'
 import { useLanguage } from '../composables/useLanguage'
 import { useTheme } from '../composables/useTheme'
 import { useSync } from '../composables/useSync'
+import { useOrder } from '../composables/useOrder'
 
 const LANGUAGES_LIST = [
   { code: 'en', name: 'English', countryCode: 'gb' },
@@ -22,6 +23,7 @@ const props = defineProps({
 const { t, language, languages, setLanguage } = useLanguage()
 const { themeName, themeNames, themes, colors, setTheme } = useTheme()
 const sync = useSync()
+const order = useOrder()
 
 const selectedId = ref(null)
 const showFireworks = ref(false)
@@ -50,13 +52,38 @@ const localDaily = computed(() => {
   return 0
 })
 
-const selectedDhikr = computed(() => props.dhikrs.find(d => d.id === selectedId.value) || null)
+const dhikrOrderIds = ref([])
+
+const localDhikrs = computed(() => {
+  const byId = {}
+  for (const d of props.dhikrs) byId[d.id] = d
+  const ordered = []
+  const seen = new Set()
+  for (const id of dhikrOrderIds.value) {
+    if (byId[id] && !seen.has(id)) {
+      ordered.push(byId[id])
+      seen.add(id)
+    }
+  }
+  for (const d of props.dhikrs) {
+    if (!seen.has(d.id)) ordered.push(d)
+  }
+  return ordered
+})
+
+const selectedDhikr = computed(() => localDhikrs.value.find(d => d.id === selectedId.value) || null)
+
+const dragIndex = ref(null)
+const dragOverIndex = ref(null)
 
 onMounted(() => {
   sync.loadFromServer(props.dhikrs)
   sync.loadFromStorage()
-  if (props.dhikrs.length > 0) {
-    selectedId.value = props.dhikrs[0].id
+  const initialOrder = order.loadOrderFromServer(props.dhikrs)
+  dhikrOrderIds.value = order.loadOrderFromStorage(initialOrder)
+  order.persistOrder(dhikrOrderIds.value)
+  if (localDhikrs.value.length > 0) {
+    selectedId.value = localDhikrs.value[0].id
   }
   setTimeout(() => {
     if (fadeRef.value) {
@@ -78,6 +105,7 @@ onUnmounted(() => {
   window.removeEventListener('focus', onFocus)
   if (fadeTimer) clearTimeout(fadeTimer)
   sync.syncBeforeUnload()
+  order.syncOrderBeforeUnload(dhikrOrderIds.value)
 })
 
 function onVisibilityChange() {
@@ -88,6 +116,7 @@ function onVisibilityChange() {
 
 function onBeforeUnload() {
   sync.syncBeforeUnload()
+  order.syncOrderBeforeUnload(dhikrOrderIds.value)
 }
 
 function onOnline() {
@@ -122,10 +151,35 @@ watch(() => selectedId.value, (newId, oldId) => {
 })
 
 const cycle = (dir) => {
-  if (props.dhikrs.length < 2) return
-  const idx = props.dhikrs.findIndex(d => d.id === selectedId.value)
-  const next = dir === 'next' ? (idx + 1) % props.dhikrs.length : (idx - 1 + props.dhikrs.length) % props.dhikrs.length
-  selectedId.value = props.dhikrs[next].id
+  if (localDhikrs.value.length < 2) return
+  const idx = localDhikrs.value.findIndex(d => d.id === selectedId.value)
+  const next = dir === 'next' ? (idx + 1) % localDhikrs.value.length : (idx - 1 + localDhikrs.value.length) % localDhikrs.value.length
+  selectedId.value = localDhikrs.value[next].id
+}
+
+function moveItem(from, to) {
+  const list = [...dhikrOrderIds.value]
+  const [moved] = list.splice(from, 1)
+  list.splice(to, 0, moved)
+  dhikrOrderIds.value = list
+  order.persistOrder(list)
+  order.scheduleSync(list)
+}
+
+function onDragStart(index) {
+  dragIndex.value = index
+}
+
+function onDragOver(index) {
+  dragOverIndex.value = index
+}
+
+function onDragEnd() {
+  if (dragIndex.value !== null && dragOverIndex.value !== null && dragIndex.value !== dragOverIndex.value) {
+    moveItem(dragIndex.value, dragOverIndex.value)
+  }
+  dragIndex.value = null
+  dragOverIndex.value = null
 }
 
 const increment = () => {
@@ -208,7 +262,7 @@ const deleteDhikr = (id, name) => {
         onSuccess: () => {
           confirmAction.value = null
           if (selectedId.value === id) {
-            selectedId.value = props.dhikrs.length > 0 ? props.dhikrs[0].id : null
+            selectedId.value = localDhikrs.value.length > 0 ? localDhikrs.value[0].id : null
           }
         },
       })
@@ -313,25 +367,41 @@ const logout = () => {
           <button @click="openCreateModal" :style="{ backgroundColor: colors.surfaceLight, padding: '8px 16px', borderRadius: '20px', border: `1px solid ${colors.border}`, color: colors.primary, fontWeight: '600', fontSize: '14px', cursor: 'pointer' }">{{ t('newBtn') }}</button>
         </div>
         <div :style="{ padding: '16px', overflowY: 'auto', flex: 1 }">
-          <div v-if="dhikrs.length === 0" :style="{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '48px 0 32px' }">
+          <div v-if="localDhikrs.length === 0" :style="{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '48px 0 32px' }">
             <div :style="{ fontSize: '40px', color: colors.textMuted, marginBottom: '12px', opacity: 0.5 }"><i class="fi fi-rr-menu-burger"></i></div>
             <div :style="{ color: colors.textSecondary, fontSize: '16px', fontWeight: '600', marginBottom: '4px' }">{{ t('noDhikrsAdded') }}</div>
             <div :style="{ color: colors.textMuted, fontSize: '13px' }">{{ t('tapNewToCreate') }}</div>
           </div>
           <div
-            v-for="d in dhikrs"
+            v-for="(d, di) in localDhikrs"
             :key="d.id"
+            draggable="true"
             @click="selectedId = d.id; showDhikrsPanel = false"
-            :style="{ backgroundColor: colors.surfaceLight, borderRadius: '14px', padding: '16px', border: `1px solid ${d.id === selectedId ? colors.primary + '60' : colors.border}`, marginBottom: '12px', cursor: 'pointer' }"
+            @dragstart.prevent="onDragStart(di)"
+            @dragover.prevent="onDragOver(di)"
+            @dragend="onDragEnd"
+            :style="{
+              backgroundColor: dragOverIndex === di && dragIndex !== null && dragIndex !== di ? colors.surface : colors.surfaceLight,
+              borderRadius: '14px', padding: '16px',
+              border: `1px solid ${d.id === selectedId ? colors.primary + '60' : colors.border}`,
+              marginBottom: '12px', cursor: 'pointer',
+              transition: 'background-color 0.15s',
+              opacity: dragIndex === di ? 0.5 : 1,
+            }"
           >
-            <div :style="{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }">
-              <div :style="{ color: colors.text, fontSize: '18px', fontWeight: '600', flex: 1, marginRight: '8px', overflow: 'hidden' }">{{ d.name }}</div>
+            <div :style="{ display: 'flex', alignItems: 'center', gap: '10px' }">
+              <button
+                @click.stop
+                @mousedown.stop
+                :style="{ color: colors.textMuted, fontSize: '18px', padding: '4px 2px', background: 'none', border: 'none', cursor: 'grab', lineHeight: 1, userSelect: 'none' }"
+              >⠿</button>
+              <div :style="{ color: colors.text, fontSize: '18px', fontWeight: '600', flex: 1, overflow: 'hidden' }">{{ d.name }}</div>
               <div :style="{ display: 'flex', gap: '4px' }">
                 <button @click.stop="openEditModal(d)" :style="{ padding: '6px', color: colors.textSecondary, fontSize: '18px', background: 'none', border: 'none', cursor: 'pointer' }"><i class="fi fi-rr-edit"></i></button>
                 <button @click.stop="deleteDhikr(d.id, d.name)" :style="{ padding: '6px', color: colors.error, fontSize: '18px', background: 'none', border: 'none', cursor: 'pointer' }"><i class="fi fi-rr-trash"></i></button>
               </div>
             </div>
-            <div :style="{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }">
+            <div :style="{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '8px' }">
               <span :style="{ color: colors.textMuted, fontSize: '12px' }">{{ t('total') }} {{ sync.dhikrCounts.value[d.id]?.total_count ?? d.total_count }}</span>
               <span v-if="d.daily_limit !== null" :style="{ color: colors.primary, fontSize: '14px', fontWeight: '600' }">
                 {{ sync.dhikrCounts.value[d.id]?.daily_count ?? d.daily_count }}/{{ d.daily_limit }}

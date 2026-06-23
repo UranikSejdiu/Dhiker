@@ -94,7 +94,7 @@ onMounted(() => {
             <Input
               v-model="form.name"
               type="text"
-              :placeholder="t('namePlaceholder')"
+              :placeholder="t('name')"
               autocomplete="name"
               :disabled="loading"
               class="h-12 rounded-xl bg-background/90 text-base"

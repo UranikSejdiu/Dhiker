@@ -1,4 +1,4 @@
-# Dhikr Counter Laravel — Project Overview
+﻿# Dhikr Counter Laravel — Project Overview
 
 A Laravel + Vue (Inertia) dhikr tracking app with multi-language and theme support.
 
@@ -139,7 +139,7 @@ resources/views/
 - Installed shadcn-vue (Reka UI) with Button, Dialog, Sheet, DropdownMenu
 - Installed vue-draggable-plus (SortableJS) for touch+mouse reorder
 - Replaced inline bottom sheets with `<Sheet>`, modals with `<Dialog>`
-- Replaced toolbar buttons with `<Button>`
+- Replaced all buttons with `<Button>` (Dashboard toolbar + Login form + Google)
 - Replaced HTML5 + custom touch drag/drop with `<VueDraggable>`
 - Replaced `localDhikrs` computed with writable ref for SortableJS v-model
 - Updated `applyThemeVariables()` to set shadcn CSS variable names
@@ -147,12 +147,4 @@ resources/views/
 - Added `tailwindcss-animate` plugin
 - Removed `slideUp` keyframe animation (Sheet handles its own transitions)
 - Cleaned up unused drag state refs and touch event handlers
-- Removed `SheetTrigger` and `DialogFooter` unused imports
-
-## Build Info
-- `npm run build` — bumps version, then builds with Vite
-- `npm run dev` — Vite hot-reload for development
-- `php artisan serve` — Laravel dev server
-- `php artisan test` — runs test suite (29 tests)
-- DB: MySQL `dhikr_counter`
-- Old app (UI reference only): `C:\laragon\www\dhikr-counter`
+- Removed unused imports

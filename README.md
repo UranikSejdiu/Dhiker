@@ -5,10 +5,12 @@ A Laravel + Vue (Inertia) dhikr tracking app with multi-language and theme suppo
 ## Features
 
 - Track dhikr counts with per-dhikr daily limits
-- 5 themes: Dark Gold, Pure Light, Emerald, Midnight, AMOLED
+- 6 themes: Dark Gold, Warm Sand, Emerald, Saffron, Noor, Tawheed
 - 4 languages: English, Deutsch, Français, Shqip
+- Drag-reorder dhikrs (touch + mouse)
 - Google OAuth login
 - PWA support (installable)
+- Offline-first sync — counts persist locally, sync to server when online
 - Settings (theme, language) synced to your account across devices
 
 ## Requirements
@@ -70,10 +72,12 @@ GOOGLE_CLIENT_SECRET=your-client-secret
 
 ## Tech Stack
 
-- **Framework**: Laravel 13
-- **Frontend**: Vue 3 + Inertia.js + Vite
-- **CSS**: Tailwind CSS 3
-- **Auth**: Laravel Breeze + Socialite (Google)
+- **Framework**: Laravel 11 (PHP 8.3+)
+- **Frontend**: Vue 3 (Composition API) + Inertia.js + Vite
+- **UI**: shadcn-vue (Reka UI) — Button, Dialog, Sheet, DropdownMenu
+- **Drag Reorder**: vue-draggable-plus (SortableJS)
+- **CSS**: Tailwind CSS 3 + tailwindcss-animate
+- **Auth**: Laravel Breeze + Socialite (Google OAuth)
 - **PWA**: Service worker + manifest.json
 
 ## Project Structure
@@ -81,23 +85,26 @@ GOOGLE_CLIENT_SECRET=your-client-secret
 ```
 app/
   Http/Controllers/
-    DhikrController.php     # Dhikr CRUD + increment/reset
-    SettingsController.php  # Theme/language sync
-    Auth/
-      SocialiteController.php # Google OAuth
+    DhikrController.php      # CRUD, increment, reset, reorder, sync
+    SettingsController.php   # Theme/language save to user record
+    Auth/SocialiteController.php
   Models/
-    Dhikr.php
-    User.php
+    Dhikr.php                # name, counts, daily_limit, sort_order
+    User.php                 # display_name, provider, theme, language
   Policies/
     DhikrPolicy.php
 resources/
   js/
-    Pages/Dashboard.vue     # Main counter UI
+    Pages/Dashboard.vue      # Counter UI, shadcn Sheets + Dialogs
     composables/
-      useTheme.js           # Theme state (localStorage + DB sync)
-      useLanguage.js        # Language state (localStorage + DB sync)
+      useSync.js             # Offline-first sync (2s debounce, sendBeacon)
+      useOrder.js            # Drag reorder (localStorage + server sync)
+      useTheme.js            # 6 themes, CSS vars, localStorage + DB
+      useLanguage.js         # 4 languages, browser detect, localStorage + DB
     Components/
-      Fireworks.vue         # Goal reached animation
+      Fireworks.vue          # Particle burst on daily goal reached
+      FlagIcon.vue
+    Components/ui/           # shadcn-vue (Button, Dialog, Sheet, DropdownMenu)
 routes/
-  web.php                   # All app routes
+  web.php                    # All app routes
 ```

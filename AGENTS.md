@@ -39,7 +39,7 @@ resources/
     composables/
       useSync.js             # Offline-first local sync with debounced server push (2s delay)
       useLanguage.js         # 4 languages (en/de/fr/sq), browser detect, localStorage + DB sync
-      useTheme.js            # 5 themes (dark-gold/pure-light/emerald/midnight/amoled), CSS vars + shadcn vars, localStorage + DB sync
+      useTheme.js            # 6 themes (dark-gold/warm-sand/emerald/saffron/noor/tawheed), CSS vars + shadcn vars, localStorage + DB sync
       useOrder.js            # Dhikr reorder — localStorage offline-first + debounced server sync
     Components/
       Fireworks.vue           # Particle burst animation on daily goal reached
@@ -97,89 +97,3 @@ resources/views/
 - LocalStorage written as cache for offline, but never overrides server order on refresh
 - Reorder uses Axios POST (not Inertia) to avoid full page render
 
-## Session History
-
-### Session 1 (June 22, 2026)
-- Scaffolded Laravel 11 + Breeze Vue + Socialite
-- Created migrations/models/controllers for dhikrs
-- Built Login.vue with dark gold theme, email/password + Google auth
-- Built Dashboard.vue with full counter UI, bottom sheets, modals, fireworks
-- Implemented useLanguage (4 languages) and useTheme (5 themes)
-- Ported strings to `t()` and icons to Flaticon Uicons
-
-### Session 2 (June 23, 2026)
-- Replaced fire-and-forget counter with `useSync.js` composable (offline-first local sync)
-- DB priority over localStorage — `loadFromStorage()` only fills gaps
-- Added debounced auto-sync (2s after last increment/reset)
-- Added `online`, `focus`, `visibilitychange` sync triggers
-- Added `hardRefresh()` for force-reload from server
-- Created `bump-version.js` with rollover logic (patch>=10 → minor, minor>=10 → major)
-- Removed Husky (Windows incompatibility)
-
-### Session 3 (June 23, 2026) — Cleanup & polish
-
-### Session 4 (June 23, 2026) — Dhikr reordering
-- Added `sort_order` column to dhikrs table (migration)
-- New `POST /dhikrs/reorder` endpoint with ownership validation
-- Dhikrs index now ordered by `sort_order ASC, created_at DESC`
-- New dhikrs get placed at the bottom (`max(sort_order) + 1`)
-- Created `useOrder.js` composable — offline-first reorder with localStorage fallback + debounced server sync
-- Drag handle (⠿) on each dhikr card in the panel
-- Optimistic reorder: moves instantly in UI, persists to localStorage, syncs to DB when online
-- Nav arrows (cycle) follow the custom order
-- Changed sync endpoint to return JSON instead of full Inertia page render
-- Switched `useSync.js` from Inertia `router.post()` to `window.axios.post()` for lighter sync requests
-- Fixed debounce timer leak: `fadeTimer` in Dashboard.vue now properly cleared on each switch
-- Fixed `beforeunload` to use `navigator.sendBeacon()` instead of async Inertia POST (reliable on page close)
-- Removed dead code: `DhikrController@increment` method and `/dhikrs/{dhikr}/increment` route (unused since sync rewrite)
-- Standardized Login.vue to use `:style` bindings only (removed Tailwind class mix)
-- Added `DhikrSyncTest` with 4 tests: count update, cross-user isolation, auth guard, validation
-- Added `DhikrFactory` model factory
-- Added `HasFactory` trait to `Dhikr` model
-
-### Session 5 (June 23, 2026) — shadcn-vue migration
-- Installed shadcn-vue (Reka UI) with Button, Dialog, Sheet, DropdownMenu
-- Installed vue-draggable-plus (SortableJS) for touch+mouse reorder
-- Replaced inline bottom sheets with `<Sheet>`, modals with `<Dialog>`
-- Replaced all buttons with `<Button>` (Dashboard toolbar + Login form + Google)
-- Replaced HTML5 + custom touch drag/drop with `<VueDraggable>`
-- Replaced `localDhikrs` computed with writable ref for SortableJS v-model
-- Updated `applyThemeVariables()` to set shadcn CSS variable names
-- Changed Tailwind config from inline-only to CSS variable color mapping
-- Added `tailwindcss-animate` plugin
-- Removed `slideUp` keyframe animation (Sheet handles its own transitions)
-- Cleaned up unused drag state refs and touch event handlers
-- Removed unused imports
-
-### Session 5b (June 23, 2026) — Order sync fixes
-- Removed localStorage order override on page load — server order (sort_order) is source of truth
-- Removed 2s debounce from order sync — sends immediately on drag end
-- Fixed sendBeacon to use Blob with application/json for proper Laravel parsing
-- Excluded dhikrs/reorder and dhikrs/sync from CSRF in bootstrap/app.php
-- Added order retry on online and focus events when orderPending
-- LocalStorage write still works as cache for offline use
-
-### Session 5c (June 23, 2026) — Dashboard polish
-- Fixed Dhikrs + Settings sheets — added overflow-y-auto scroll with flex layout
-- Enlarged navigation toolbar — p-3.5 container, icon-lg buttons, text-xl icons, text-xs labels
-- Fixed destructive buttons (sign out, confirm) with explicit :style overriding broken opacity modifiers
-- Fixed refresh button text alignment (justify-center instead of justify-between)
-
-### Session 5d (June 23, 2026) — Server is source of truth for order
-- Removed loadOrderFromStorage from onMounted — props.dhikrs already sorted by sort_order
-- Added order retry on online + focus events when orderPending
-
-### Session 5e (June 23, 2026) — Bigger buttons
-- Increased all button sizes: default h-10, sm h-9, lg h-11, more padding
-
-### Session 5f (June 23, 2026) — Fix import casing for Linux
-- Changed all @/components/ui/ imports to @/Components/ui/ for case-sensitive FS
-- Removed duplicate lowercase resources/js/components/ui/ from git index
-- Keep Breeze convention (uppercase Components/) for all paths
-
-### Session 5g (June 23, 2026) — Restore old +New button style
-- Changed +New button from default variant to explicit :style matching pre-shadcn look
-- Style: surfaceLight bg, border outline, primary text, pill shape
-
-### Session 5h (June 23, 2026) — +New button tweaks
-- Changed borderRadius from 20px to 8px, padding 10px 22px for wider button

@@ -9,7 +9,7 @@ class SettingsController extends Controller
     public function update(Request $request)
     {
         $validated = $request->validate([
-            'theme' => 'nullable|string|in:dark-gold,pure-light,emerald,midnight,amoled',
+            'theme' => 'nullable|string|in:dark-gold,warm-sand,emerald,saffron,noor,tawheed',
             'language' => 'nullable|string|in:en,de,fr,sq',
         ]);
 

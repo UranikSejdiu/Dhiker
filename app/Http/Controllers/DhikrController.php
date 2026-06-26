@@ -10,6 +10,15 @@ class DhikrController extends Controller
 {
     public function index()
     {
+        $today = now()->toDateString();
+        Auth::user()->dhikrs()
+            ->where('last_reset_date', '<', $today)
+            ->where('daily_count', '>', 0)
+            ->update([
+                'daily_count' => 0,
+                'last_reset_date' => $today,
+            ]);
+
         $dhikrs = Auth::user()->dhikrs()->orderBy('sort_order')->orderBy('created_at', 'desc')->get();
         return inertia('Dashboard', ['dhikrs' => $dhikrs]);
     }
@@ -100,16 +109,26 @@ class DhikrController extends Controller
         ]);
 
         $userIds = Auth::user()->dhikrs()->pluck('id')->flip();
+        $today = now()->toDateString();
 
-        DB::transaction(function () use ($data, $userIds) {
+        DB::transaction(function () use ($data, $userIds, $today) {
             foreach ($data['dhikrs'] as $item) {
                 if (!$userIds->has($item['id'])) {
                     abort(403);
                 }
-                Dhikr::where('id', $item['id'])->update([
-                    'total_count' => $item['total_count'],
-                    'daily_count' => $item['daily_count'],
-                ]);
+                $dhikr = Dhikr::where('id', $item['id'])->first();
+                if ($dhikr && $dhikr->last_reset_date->toDateString() < $today) {
+                    $dhikr->update([
+                        'total_count' => $item['total_count'],
+                        'daily_count' => $item['daily_count'],
+                        'last_reset_date' => $today,
+                    ]);
+                } else {
+                    $dhikr->update([
+                        'total_count' => $item['total_count'],
+                        'daily_count' => $item['daily_count'],
+                    ]);
+                }
             }
         });
 

@@ -12,6 +12,19 @@ function loadFromServer(dhikrs) {
     map[d.id] = { total_count: d.total_count ?? 0, daily_count: d.daily_count ?? 0 }
   }
   dhikrCounts.value = map
+  checkDailyReset()
+}
+
+function checkDailyReset() {
+  const today = new Date().toDateString()
+  const lastSeen = localStorage.getItem('dhikr_last_seen')
+  if (lastSeen && lastSeen !== today) {
+    for (const id of Object.keys(dhikrCounts.value)) {
+      dhikrCounts.value[id].daily_count = 0
+    }
+    persistToStorage()
+  }
+  localStorage.setItem('dhikr_last_seen', today)
 }
 
 function loadFromStorage() {

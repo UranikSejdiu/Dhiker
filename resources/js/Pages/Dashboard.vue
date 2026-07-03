@@ -9,6 +9,7 @@ import { useLanguage } from '../composables/useLanguage'
 import { useTheme, toRgba } from '../composables/useTheme'
 import { useSync } from '../composables/useSync'
 import { useOrder } from '../composables/useOrder'
+import { usePwaInstall } from '../composables/usePwaInstall'
 import { Button } from '@/Components/ui/button'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/Components/ui/sheet'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/Components/ui/dialog'
@@ -28,6 +29,7 @@ const { t, language, languages, setLanguage } = useLanguage()
 const { themeName, themeNames, themes, colors, setTheme } = useTheme()
 const sync = useSync()
 const order = useOrder()
+const pwa = usePwaInstall()
 
 const selectedId = ref(null)
 const showFireworks = ref(false)
@@ -433,6 +435,14 @@ const logout = () => {
             <p class="text-xs font-semibold tracking-wider text-muted-foreground ml-1 mb-2">SYNC</p>
             <Button variant="outline" class="w-full justify-center" @click="hardRefresh">
               <span>{{ t('refreshFromServer') }}</span>
+            </Button>
+          </div>
+
+          <!-- Install App -->
+          <div v-if="pwa.canInstall.value">
+            <Button variant="outline" class="w-full justify-center" @click="pwa.install">
+              <i class="fi fi-rr-download mr-2"></i>
+              {{ t('installApp') }}
             </Button>
           </div>
 

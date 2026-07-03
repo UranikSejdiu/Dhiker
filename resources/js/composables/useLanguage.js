@@ -61,6 +61,7 @@ const translations = {
     saffron: 'Saffron',
     noor: 'Noor',
     tawheed: 'Tawheed',
+    installApp: 'Install App',
   },
   de: {
     appTitle: 'Dhikr Zähler',
@@ -119,6 +120,7 @@ const translations = {
     saffron: 'Saffron',
     noor: 'Noor',
     tawheed: 'Tawheed',
+    installApp: 'App installieren',
   },
   fr: {
     appTitle: 'Compteur Dhikr',
@@ -177,6 +179,7 @@ const translations = {
     saffron: 'Saffron',
     noor: 'Noor',
     tawheed: 'Tawheed',
+    installApp: "Installer l'app",
   },
   sq: {
     appTitle: 'Dhikr Counter',
@@ -235,6 +238,7 @@ const translations = {
     saffron: 'Saffron',
     noor: 'Noor',
     tawheed: 'Tawheed',
+    installApp: 'Instalo Aplikacionin',
   },
 }
 

@@ -119,19 +119,22 @@ application and test environment are configured.
 
 ## License and usage
 
-The author's original work is **free for noncommercial use, learning,
-modification, and free noncommercial sharing** under the
-[Uranik Noncommercial License 1.0](LICENSE.md). Resale, paid products, paid client
-work, and monetized services require prior written permission. Keep author credit
-and the applicable license notices.
+The author's original work is available under the
+[PolyForm Noncommercial License 1.0.0](LICENSE.md). It permits use, modification,
+and sharing for permitted noncommercial purposes and expressly permits use by
+specified charitable, educational, research, public-service, and government
+organizations. Uses outside the license's permitted purposes require separate
+permission; commercial resale and monetized products or services are not
+generally covered by the noncommercial grant.
 
-See [USAGE.md](USAGE.md) for examples and
-[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for dependency and prior-license
-information. Laravel, Vue, and other third-party material retain their own
-licenses. Earlier valid MIT permissions are not revoked by this change.
+See the [usage guide](USAGE.md), [copyright notice](NOTICE.md), and
+[third-party notices](THIRD_PARTY_NOTICES.md). The official license governs;
+these summaries add no restrictions. Third-party materials and previously valid
+license grants retain their existing permissions.
 
 This is the Laravel/Vue web application. The independent Expo/Android Dhikr app
 is maintained in [Personal-Hub/apps/dhikr](https://github.com/UranikSejdiu/Personal-Hub/tree/main/apps/dhikr).
 
-Author: [Uranik Sejdiu](https://github.com/UranikSejdiu). Request commercial
-permission through this repository's issue tracker or the profile's contact options.
+Author: [Uranik Sejdiu](https://github.com/UranikSejdiu). For permission requests
+outside the license's permitted purposes, use this repository's issue tracker
+or the contact options on the GitHub profile.

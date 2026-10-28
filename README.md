@@ -17,21 +17,21 @@ A Laravel + Vue (Inertia) dhikr tracking app with multi-language and theme suppo
 
 - PHP 8.3+
 - Composer
-- Node.js 20+
+- Node.js 20.19+ or 22.12+ (required by Vite 7)
 - MySQL or SQLite
 
 ## Setup
 
 ```bash
 # Clone & enter project
-git clone <repo-url> dhikr-counter
+git clone https://github.com/UranikSejdiu/Dhiker.git dhikr-counter
 cd dhikr-counter
 
 # Install PHP dependencies
 composer install
 
 # Install JS dependencies
-npm install
+npm ci
 
 # Copy environment file
 cp .env.example .env
@@ -108,3 +108,30 @@ resources/
 routes/
   web.php                    # All app routes
 ```
+
+## Build behavior and checks
+
+`npm run build` runs `bump-version.js` before Vite. It updates the app version in
+`package.json`, `resources/js/constants/version.js`, and `public/manifest.json`.
+For a frontend compilation without that version bump, use `npx vite build` after
+installing dependencies. PHP tests are available with `composer test` after the
+application and test environment are configured.
+
+## License and usage
+
+The author's original work is **free for noncommercial use, learning,
+modification, and free noncommercial sharing** under the
+[Uranik Noncommercial License 1.0](LICENSE.md). Resale, paid products, paid client
+work, and monetized services require prior written permission. Keep author credit
+and the applicable license notices.
+
+See [USAGE.md](USAGE.md) for examples and
+[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for dependency and prior-license
+information. Laravel, Vue, and other third-party material retain their own
+licenses. Earlier valid MIT permissions are not revoked by this change.
+
+This is the Laravel/Vue web application. The independent Expo/Android Dhikr app
+is maintained in [Personal-Hub/apps/dhikr](https://github.com/UranikSejdiu/Personal-Hub/tree/main/apps/dhikr).
+
+Author: [Uranik Sejdiu](https://github.com/UranikSejdiu). Request commercial
+permission through this repository's issue tracker or the profile's contact options.
